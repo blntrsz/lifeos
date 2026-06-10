@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/ast-grep/ast-grep/main/schemas/json_rule.json
+
+id: no-package-scripts
+language: Json
+severity: error
+message: 'package.json must not have a top-level "scripts" key — use mise.toml tasks instead'
+
+files:
+  - "**/package.json"
+
+ignores:
+  - ".agents/**"
+  - "node_modules/**"
+
+rule:
+  all:
+    - kind: pair
+    - has:
+        field: key
+        regex: '^"scripts"$'
+        stopBy: end
+    - not:
+        inside:
+          kind: pair
+          stopBy: end
+
+note: |
+  package.json may not define a top-level `scripts` field.
+  Nested `"scripts"` keys inside other objects are allowed.
+
+  ```json
+  // ❌ Bad
+  { "scripts": { "build": "tsc" } }
+
+  // ✅ OK — not top-level
+  { "config": { "scripts": "ignored" } }
+
+  // ✅ Good — use mise.toml
+  [tasks.build]
+  run = "bunx tsc"
+  ```

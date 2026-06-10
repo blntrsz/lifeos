@@ -1,0 +1,5 @@
+[tasks.dev]
+run = "bun run src/main.ts"
+
+[tasks.start]
+run = "bun run src/main.ts"

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "@template/core",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "@/*": "./src/*"
+  },
+  "exports": {
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
+  "dependencies": {
+    "@effect/platform-node-shared": "catalog:",
+    "@effect/sql-sqlite-node": "catalog:",
+    "effect": "catalog:",
+    "ulid": "catalog:"
+  }
+}

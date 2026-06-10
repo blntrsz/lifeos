@@ -1,0 +1,11 @@
+id: no-as-any-never
+valid:
+  - |
+    const value = input as unknown
+  - |
+    const value = input as string
+invalid:
+  - |
+    const value = input as any
+  - |
+    const value = input as never

@@ -1,0 +1,2 @@
+[tasks."build:types"]
+run = "tsc --build"

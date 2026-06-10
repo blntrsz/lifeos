@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/ast-grep/ast-grep/main/schemas/sgconfig.json
+
+# Rule directories - organized by scope
+ruleDirs:
+  - packages/rules/shared # Rules for all TypeScript code
+  - packages/rules/effect # Effect library patterns
+
+# Test configuration
+testConfigs:
+  - testDir: packages/rules/tests/shared
+  - testDir: packages/rules/tests/effect
+
+# Treat .ts files as TSX for unified rule handling
+languageGlobs:
+  tsx: ["*.ts", "*.tsx"]
+  # .gitignore has no tree-sitter grammar; bash parses lines as commands/comments
+  bash: ["**/.gitignore", ".gitignore"]

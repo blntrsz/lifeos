@@ -1,0 +1,25 @@
+{
+  "sortImports": {
+    "groups": [
+      "builtin",
+      "external",
+      ["internal", "subpath"],
+      ["parent", "sibling", "index"],
+      "style",
+      "unknown"
+    ],
+    "newlinesBetween": true
+  },
+  "sortPackageJson": true,
+  "ignorePatterns": [
+    ".claude/",
+    ".agents/",
+    ".codex/",
+    ".fp/",
+    ".pi/",
+    "references/",
+    "apps/web/src/routeTree.gen.ts",
+    "dist/",
+    "node_modules/"
+  ]
+}

@@ -1,0 +1,35 @@
+id: no-package-scripts
+snapshots:
+  ? |
+    {
+      "name": "example",
+      "scripts": {
+        "build": "tsc"
+      }
+    }
+  : labels:
+      - source: |-
+          "scripts": {
+              "build": "tsc"
+            }
+        style: primary
+        start: 25
+        end: 60
+      - source: '"scripts"'
+        style: secondary
+        start: 25
+        end: 34
+  ? |
+    {
+      "name": "example",
+      "scripts": {}
+    }
+  : labels:
+      - source: '"scripts": {}'
+        style: primary
+        start: 25
+        end: 38
+      - source: '"scripts"'
+        style: secondary
+        start: 25
+        end: 34

@@ -1,0 +1,7 @@
+id: single-root-gitignore
+invalid:
+  - |
+    node_modules
+  - |
+    # sqlite
+    data/*.db

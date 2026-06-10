@@ -1,0 +1,63 @@
+{
+  "configVersion": "1.7",
+  "$schema": "https://github.com/jayu/rev-dep/blob/master/config-schema/1.7.schema.json?raw=true",
+  "ignoreFiles": [
+    ".agents/**",
+    "packages/core/migrations/**",
+    "packages/rules/**",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+  ],
+  "rules": [
+    {
+      "path": ".",
+      "prodEntryPoints": ["apps/api/src/main.ts"],
+      "devEntryPoints": [
+        "apps/**/vite.config.ts",
+        "apps/**/vitest.config.ts",
+        "apps/web/src/router.tsx",
+        "apps/web/src/routeTree.gen.ts",
+      ],
+      "followMonorepoPackages": true,
+      "moduleBoundaries": [
+        {
+          "name": "packages-not-to-apps",
+          "pattern": "packages/**",
+          "deny": ["apps/**"],
+        },
+      ],
+      "circularImportsDetection": {
+        "enabled": true,
+        "ignoreTypeImports": true,
+      },
+      "orphanFilesDetection": {
+        "enabled": true,
+      },
+      "unusedExportsDetection": {
+        "enabled": true,
+        "ignoreTypeExports": true,
+        "ignore": {
+          "apps/web/src/router.tsx": ["getRouter"],
+          "apps/web/src/components/ui/button.tsx": ["buttonVariants"],
+        },
+      },
+      "unresolvedImportsDetection": {
+        "enabled": true,
+      },
+    },
+    {
+      "path": "packages/core",
+      "unusedNodeModulesDetection": {
+        "enabled": true,
+        "excludeModules": ["@types/**"],
+      },
+      "missingNodeModulesDetection": {
+        "enabled": true,
+      },
+      "devDepsUsageOnProdDetection": {
+        "enabled": true,
+        "ignoreTypeImports": true,
+      },
+    },
+  ],
+}

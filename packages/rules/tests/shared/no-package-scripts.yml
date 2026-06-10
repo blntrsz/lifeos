@@ -1,0 +1,27 @@
+id: no-package-scripts
+valid:
+  - |
+    {
+      "name": "example",
+      "private": true
+    }
+  - |
+    {
+      "name": "workspace-pkg",
+      "config": {
+        "scripts": "nested key is allowed"
+      }
+    }
+invalid:
+  - |
+    {
+      "name": "example",
+      "scripts": {
+        "build": "tsc"
+      }
+    }
+  - |
+    {
+      "name": "example",
+      "scripts": {}
+    }

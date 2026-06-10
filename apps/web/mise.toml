@@ -1,0 +1,11 @@
+[tasks.dev]
+run = "bunx vite dev --host 0.0.0.0 --port 3000"
+
+[tasks.build]
+run = "bunx vite build"
+
+[tasks.preview]
+run = "bunx vite preview --host 0.0.0.0 --port 3000"
+
+[tasks.test]
+run = "bunx vitest run"

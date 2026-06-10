@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/ast-grep/ast-grep/main/schemas/typescript_rule.json
+
+id: no-as-any-never
+language: tsx
+severity: error
+message: "Do not use `as any` or `as never`; model the type boundary explicitly instead"
+
+rule:
+  any:
+    - pattern: $EXPR as any
+    - pattern: $EXPR as never
+
+ignores:
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "**/*.spec.ts"
+  - "**/*.spec.tsx"
+  - "**/*.d.ts"
+  - "**/node_modules/**"
+  - "apps/web/src/routeTree.gen.ts"
+
+note: |
+  `as any` and `as never` erase useful type information and hide integration
+  problems. Prefer a precise type, a small adapter function, or an explicit
+  `unknown` boundary with validation/narrowing.
+
+  Tests may use these assertions when deliberately exercising impossible or
+  unsafe inputs.

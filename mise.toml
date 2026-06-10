@@ -1,0 +1,35 @@
+experimental_monorepo_root = true
+
+[env]
+MISE_EXPERIMENTAL = "true"
+
+[tools]
+bun = { version = "1.3.13" }
+
+[monorepo]
+config_roots = ["apps/*", "packages/*"]
+
+[tasks.dev]
+description = "Start API (:3001) and web (:3000)"
+run = "mise run //apps/api:dev & mise run //apps/web:dev & wait"
+
+[tasks.check]
+run = "mise run 'check:*'"
+
+[tasks."check:lint"]
+run = "bunx oxlint -c .oxlintrc.json"
+
+[tasks."check:ast"]
+run = "bunx ast-grep scan"
+
+[tasks."check:format"]
+run = "bunx oxfmt --check ."
+
+[tasks."check:workspace"]
+run = "bunx sherif@1.11.1"
+
+[tasks."check:deps"]
+run = "bunx rev-dep config run"
+
+[tasks."check:type"]
+run = "cd apps/api && bunx tsgo -b"

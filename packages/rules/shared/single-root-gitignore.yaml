@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/ast-grep/ast-grep/main/schemas/json_rule.json
+
+id: single-root-gitignore
+language: Bash
+severity: error
+message: Only the repository root may have a .gitignore — merge patterns into /.gitignore and delete this file
+
+files:
+  - "**/.gitignore"
+
+ignores:
+  - ".gitignore"
+  - ".agents/**"
+
+rule:
+  kind: program
+
+note: |
+  Keep one `.gitignore` at the repo root. Nested ignores do not apply from the monorepo root
+  the way many tools expect, and they drift from the shared bun template.
+
+  Prefix paths when merging (e.g. `apps/api/data/*.db`).
+
+  ```gitignore
+  # ❌ apps/web/.gitignore
+  .nitro
+
+  # ✅ /.gitignore
+  apps/web/.nitro
+  ```
