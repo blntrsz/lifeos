@@ -1,21 +1,30 @@
-import { NodeFileSystem } from "@effect/platform-node-shared";
-import { SqliteClient, SqliteMigrator } from "@effect/sql-sqlite-node";
-import { Layer } from "effect";
+import { SqliteClient, SqliteMigrator } from "@effect/sql-sqlite-bun";
+import { Effect, Layer } from "effect";
 
-const migrationsDirectory = `${import.meta.dirname}/../../migrations`;
+import initialTaskMigration from "../migrations/0001-task";
+
+const loadMigrations = SqliteMigrator.fromRecord({
+  "0001_task": initialTaskMigration,
+});
 
 /**
- * SQLite client + migrator for the task schema.
+ * SQLite client + migrator for LifeOS persisted app data.
  *
- * Migrations live in `migrations/` as `<id>_<name>.ts` default-exporting an
- * `Effect` that uses `SqlClient`.
+ * Migrations are registered here so app code depends on one LifeOS database
+ * layer rather than persistence details for each dormant starter slice.
  */
-export const layer = (filename: string) => {
+export const LifeOsDatabaseLive = (filename: string) => {
   const SqlLive = SqliteClient.layer({ filename });
 
-  const MigrateLive = SqliteMigrator.layer({
-    loader: SqliteMigrator.fromFileSystem(migrationsDirectory),
-  }).pipe(Layer.provide(SqlLive), Layer.provide(NodeFileSystem.layer));
+  return Layer.unwrap(
+    Effect.gen(function* () {
+      const migrate = SqliteMigrator.run({
+        loader: loadMigrations,
+      });
 
-  return Layer.merge(SqlLive, MigrateLive);
+      yield* Effect.provide(migrate, SqlLive);
+
+      return SqlLive;
+    }),
+  );
 };
