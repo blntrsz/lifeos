@@ -2,9 +2,11 @@ import { SqliteClient, SqliteMigrator } from "@effect/sql-sqlite-bun";
 import { Effect, Layer } from "effect";
 
 import initialTaskMigration from "../migrations/0001-task";
+import initialChatMigration from "../migrations/0002-chat";
 
 const loadMigrations = SqliteMigrator.fromRecord({
   "0001_task": initialTaskMigration,
+  "0002_chat": initialChatMigration,
 });
 
 /**
