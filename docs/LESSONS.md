@@ -1,0 +1,1 @@
+- For persisted domain records, put storage-facing schema/encoding in the domain model and prefer Effect SQL `SqlModel`/repository features over hand-written row mappers, snake_case/camelCase translations, and ad hoc timestamp formatting. Source: https://github.com/blntrsz/lifeos/pull/24#discussion_r3407692525
