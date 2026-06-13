@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ChatsIdRouteImport } from './routes/chats.$id'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
 
 const TasksRoute = TasksRouteImport.update({
@@ -23,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChatsIdRoute = ChatsIdRouteImport.update({
+  id: '/chats/$id',
+  path: '/chats/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSplatRoute = ApiSplatRouteImport.update({
   id: '/api/$',
   path: '/api/$',
@@ -33,34 +39,45 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/tasks': typeof TasksRoute
   '/api/$': typeof ApiSplatRoute
+  '/chats/$id': typeof ChatsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/tasks': typeof TasksRoute
   '/api/$': typeof ApiSplatRoute
+  '/chats/$id': typeof ChatsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/tasks': typeof TasksRoute
   '/api/$': typeof ApiSplatRoute
+  '/chats/$id': typeof ChatsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/tasks' | '/api/$'
+  fullPaths: '/' | '/tasks' | '/api/$' | '/chats/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/tasks' | '/api/$'
-  id: '__root__' | '/' | '/tasks' | '/api/$'
+  to: '/' | '/tasks' | '/api/$' | '/chats/$id'
+  id: '__root__' | '/' | '/tasks' | '/api/$' | '/chats/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  TasksRoute: typeof TasksRoute
   IndexRoute: typeof IndexRoute
+  TasksRoute: typeof TasksRoute
   ApiSplatRoute: typeof ApiSplatRoute
+  ChatsIdRoute: typeof ChatsIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/tasks': {
+      id: '/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof TasksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -68,11 +85,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/tasks': {
-      id: '/tasks'
-      path: '/tasks'
-      fullPath: '/tasks'
-      preLoaderRoute: typeof TasksRouteImport
+    '/chats/$id': {
+      id: '/chats/$id'
+      path: '/chats/$id'
+      fullPath: '/chats/$id'
+      preLoaderRoute: typeof ChatsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/$': {
@@ -86,19 +103,11 @@ declare module '@tanstack/react-router' {
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  TasksRoute: TasksRoute,
   IndexRoute: IndexRoute,
+  TasksRoute: TasksRoute,
   ApiSplatRoute: ApiSplatRoute,
+  ChatsIdRoute: ChatsIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
