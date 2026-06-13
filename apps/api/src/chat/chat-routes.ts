@@ -1,12 +1,12 @@
 import { ChatService } from "@template/core/chat/service/chat.service";
-import { ChatId, FirstSendInput, type ChatRecord } from "@template/core/domain/chat.model";
+import { ChatId, FirstSendInput } from "@template/core/domain/chat.model";
 import * as ChatModel from "@template/core/domain/chat.model";
 import { Effect, Layer, Stream } from "effect";
 import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/unstable/http";
 
 const sse = (event: string, data: unknown) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 
-const encodeChatRecord = (chat: ChatRecord) => ChatModel.encodeChatRecord(chat);
+const chatJsonResponse = HttpServerResponse.schemaJson(ChatModel.ChatModel.json);
 
 export const ChatRoutes = Layer.mergeAll(
   HttpRouter.add("POST", "/api/chats/first-send", () =>
@@ -40,7 +40,7 @@ export const ChatRoutes = Layer.mergeAll(
         return HttpServerResponse.empty({ status: 404 });
       }
 
-      return yield* HttpServerResponse.json(encodeChatRecord(chat));
+      return yield* chatJsonResponse(chat);
     }),
   ),
 );

@@ -11,7 +11,11 @@ export class ChatModel extends Model.Class<ChatModel>("Chat")({
   title: Schema.String,
   createdAt: Model.DateTimeInsert,
   updatedAt: Model.DateTimeUpdate,
-  history: Schema.fromJsonString(Prompt.Prompt),
+  history: Model.Field({
+    select: Schema.fromJsonString(Prompt.Prompt),
+    insert: Schema.fromJsonString(Prompt.Prompt),
+    json: Prompt.Prompt,
+  }),
 }) {}
 
 export type ChatRecord = typeof ChatModel.Type;
@@ -24,12 +28,6 @@ export type ChatMetadata = {
 };
 
 const encodeChatModelJson = Schema.encodeSync(ChatModel.json);
-const encodePromptJson = Schema.encodeSync(Prompt.Prompt);
-
-export const encodeChatRecord = (chat: ChatRecord) => ({
-  ...encodeChatModelJson(chat),
-  history: encodePromptJson(chat.history),
-});
 
 export const encodeChatMetadata = (chat: ChatRecord): ChatMetadata => {
   const encoded = encodeChatModelJson(chat);
