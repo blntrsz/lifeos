@@ -38,6 +38,9 @@ const makeAppLive = (databaseFilename = lifeOsDbPath) => {
   );
 };
 
+export const makeWebHandler = (databaseFilename = lifeOsDbPath) =>
+  HttpRouter.toWebHandler(makeAppLive(databaseFilename));
+
 export const AppLive = makeAppLive();
 
 export const { handler, dispose } = HttpRouter.toWebHandler(AppLive);

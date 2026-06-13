@@ -3,6 +3,7 @@
   "$schema": "https://github.com/jayu/rev-dep/blob/master/config-schema/1.7.schema.json?raw=true",
   "ignoreFiles": [
     ".agents/**",
+    "alchemy.run.ts",
     "packages/core/migrations/**",
     "packages/rules/**",
     "**/*.test.ts",
@@ -37,6 +38,7 @@
         "enabled": true,
         "ignoreTypeExports": true,
         "ignore": {
+          "apps/api/src/layers.ts": ["makeWebHandler"],
           "apps/web/src/router.tsx": ["getRouter"],
           "apps/web/src/components/ui/button.tsx": ["buttonVariants"],
         },
