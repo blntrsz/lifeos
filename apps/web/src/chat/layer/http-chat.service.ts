@@ -58,9 +58,13 @@ export const HttpChatService = Layer.effect(
 
               if (line.startsWith("data: ")) {
                 if (acc.state === "event") {
-                  return [{ state: "event", eventName: acc.eventName, data: line.slice(6) }, []];
+                  const prefix = acc.data.length > 0 ? `${acc.data}\n` : "";
+                  return [
+                    { state: "event", eventName: acc.eventName, data: `${prefix}${line.slice(6)}` },
+                    [],
+                  ];
                 }
-                return [acc, []];
+                return [{ state: "event", eventName: "message", data: line.slice(6) }, []];
               }
 
               return [acc, []];

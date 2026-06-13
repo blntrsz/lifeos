@@ -76,7 +76,12 @@ export function mockFetch(response: Response) {
   };
 }
 
+let _originalMatchMedia: typeof window.matchMedia | null = null;
+
 export function mockDesktopPointer() {
+  if (_originalMatchMedia === null) {
+    _originalMatchMedia = window.matchMedia;
+  }
   Object.defineProperty(window, "matchMedia", {
     writable: true,
     value: (query: string) => ({
@@ -90,4 +95,14 @@ export function mockDesktopPointer() {
       dispatchEvent: () => false,
     }),
   });
+}
+
+export function restoreDesktopPointer() {
+  if (_originalMatchMedia !== null) {
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      value: _originalMatchMedia,
+    });
+    _originalMatchMedia = null;
+  }
 }

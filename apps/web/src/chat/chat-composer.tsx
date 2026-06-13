@@ -19,15 +19,18 @@ export function ChatComposer() {
   const sendResult = useAtomValue(ChatAtoms.sendFirstMessage);
   const [, setComposerText] = useAtom(ChatAtoms.composerText);
   const send = useAtomSet(ChatAtoms.sendFirstMessage, { mode: "promise" });
+  const resetComposerSession = useAtomSet(ChatAtoms.resetComposerSession);
   const navigate = useNavigate();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (navigate !== null && AsyncResult.isSuccess(sendResult)) {
       const chat = sendResult.value;
-      navigate({ to: "/chats/$id", params: { id: chat.id } });
+      void navigate({ to: "/chats/$id", params: { id: chat.id } }).finally(() => {
+        resetComposerSession();
+      });
     }
-  }, [sendResult, navigate]);
+  }, [sendResult, navigate, resetComposerSession]);
 
   const hasStarted = state.sentText.length > 0 || state.streamedText.length > 0;
 
@@ -92,7 +95,11 @@ export function ChatComposer() {
 
               <div className="flex justify-start">
                 <div className="max-w-[80%] rounded-2xl bg-muted px-4 py-3 text-foreground">
-                  {state.streamedText.length === 0 ? (
+                  {state.sendError !== null ? (
+                    <span className="text-destructive" role="alert">
+                      {state.sendError}
+                    </span>
+                  ) : state.streamedText.length === 0 ? (
                     <span className="inline-flex gap-1">
                       <span className="animate-bounce">.</span>
                       <span className="animate-bounce [animation-delay:0.2s]">.</span>

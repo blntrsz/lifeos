@@ -48,6 +48,15 @@ export const sendFirstMessage = chatRuntime.fn<void>()((_, get) =>
   }),
 );
 
+export const resetComposerSession = Atom.fn<void>()((_, get) =>
+  Effect.sync(() => {
+    get.set(composerText, "");
+    get.set(sentText, "");
+    get.set(streamedText, "");
+    get.set(sendFirstMessage, Atom.Reset);
+  }),
+);
+
 export const composerState = Atom.make((get) => {
   const text = get(composerText);
   const sendState = get(sendFirstMessage);

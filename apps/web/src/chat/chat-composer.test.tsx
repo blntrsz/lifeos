@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
@@ -6,6 +6,7 @@ import {
   mockDesktopPointer,
   mockFetch,
   renderWithRouter,
+  restoreDesktopPointer,
 } from "@/test/test-utils";
 
 import { Home } from "../routes/index";
@@ -15,6 +16,7 @@ const getComposer = () => screen.getAllByPlaceholderText("What would you like to
 describe("root chat route", () => {
   afterEach(() => {
     cleanup();
+    restoreDesktopPointer();
   });
   it("renders the Agent label and a composer", async () => {
     await renderWithRouter([{ path: "/", component: Home }]);
@@ -132,6 +134,55 @@ describe("root chat route", () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe("/chats/cht-test");
     });
+
+    restore();
+  });
+
+  it("shows a fresh empty composer when the user returns to root", async () => {
+    mockDesktopPointer();
+    const { restore } = mockFetch(
+      createSseResponse([
+        {
+          event: "chat",
+          data: {
+            id: "cht-test",
+            title: "Hello",
+            createdAt: "2026-06-13T00:00:00.000Z",
+            updatedAt: "2026-06-13T00:00:00.000Z",
+          },
+        },
+        { event: "delta", data: { text: "Agent received: Hello" } },
+        { event: "done", data: { reason: "complete" } },
+      ]),
+    );
+
+    function ChatStub() {
+      return <div>Chat stub</div>;
+    }
+
+    const { router } = await renderWithRouter([
+      { path: "/", component: Home },
+      { path: "/chats/$id", component: ChatStub },
+    ]);
+
+    const textarea = getComposer();
+    fireEvent.change(textarea, { target: { value: "Hello" } });
+    fireEvent.keyDown(textarea, { key: "Enter", shiftKey: false });
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe("/chats/cht-test");
+    });
+
+    await act(async () => {
+      await router.navigate({ to: "/" });
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    expect(router.state.location.pathname).toBe("/");
+    expect((getComposer() as HTMLTextAreaElement).value).toBe("");
+    expect(screen.queryByText("Chat stub")).toBeNull();
 
     restore();
   });
