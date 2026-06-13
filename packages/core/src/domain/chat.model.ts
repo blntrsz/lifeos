@@ -1,4 +1,4 @@
-import { Effect, Ref, Schema } from "effect";
+import { Clock, Effect, Ref, Schema } from "effect";
 import { Chat, Prompt } from "effect/unstable/ai";
 import { Model } from "effect/unstable/schema";
 
@@ -9,8 +9,8 @@ export const ChatId = Schema.String.pipe(Schema.brand("ChatId"));
 export class ChatModel extends Model.Class<ChatModel>("Chat")({
   id: Model.GeneratedByApp(ChatId),
   title: Schema.String,
-  createdAt: Model.DateTimeInsert,
-  updatedAt: Model.DateTimeUpdate,
+  createdAt: Schema.DateFromString,
+  updatedAt: Schema.DateFromString,
   history: Model.Field({
     select: Schema.fromJsonString(Prompt.Prompt),
     insert: Schema.fromJsonString(Prompt.Prompt),
@@ -18,22 +18,24 @@ export class ChatModel extends Model.Class<ChatModel>("Chat")({
   }),
 }) {}
 
-export type ChatRecord = typeof ChatModel.Type;
+export type Type = typeof ChatModel.Type;
 
-export type ChatMetadata = {
-  readonly id: string;
-  readonly title: string;
-  readonly createdAt: string;
-  readonly updatedAt: string;
-};
+export const ChatMetadata = Schema.Struct({
+  id: ChatId,
+  title: Schema.String,
+  createdAt: Schema.String,
+  updatedAt: Schema.String,
+});
+
+export type ChatMetadata = typeof ChatMetadata.Type;
 
 const encodeChatModelJson = Schema.encodeSync(ChatModel.json);
 
-export const encodeChatMetadata = (chat: ChatRecord): ChatMetadata => {
+export const toMetadata = (chat: Type): ChatMetadata => {
   const encoded = encodeChatModelJson(chat);
 
   return {
-    id: encoded.id,
+    id: ChatId.make(encoded.id),
     title: encoded.title,
     createdAt: encoded.createdAt,
     updatedAt: encoded.updatedAt,
@@ -61,6 +63,8 @@ export const deriveTitle = (messageText: string) => {
   return title.length === 0 ? "Untitled Chat" : title;
 };
 
+export const createPlaceholderAgentText = (messageText: string) => `Agent received: ${messageText}`;
+
 export const createCompletedHistory = Effect.fn("ChatModel.createCompletedHistory")(function* (
   userText: string,
   agentText: string,
@@ -71,4 +75,21 @@ export const createCompletedHistory = Effect.fn("ChatModel.createCompletedHistor
   ]);
 
   return yield* Ref.get(chat.history);
+});
+
+export const make = Effect.fn("ChatModel.make")(function* (
+  input: FirstSendInput,
+  agentText: string,
+) {
+  const id = yield* createChatId();
+  const timestamp = yield* Clock.currentTimeMillis.pipe(Effect.map((millis) => new Date(millis)));
+  const history = yield* createCompletedHistory(input.message.text, agentText);
+
+  return ChatModel.insert.make({
+    id,
+    title: deriveTitle(input.message.text),
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    history,
+  });
 });

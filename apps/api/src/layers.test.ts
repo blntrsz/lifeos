@@ -14,8 +14,8 @@ afterAll(async () => {
 });
 
 describe("LifeOS database boundary", () => {
-  test("first send creates a Chat, streams the Agent response, and persists completed Prompt history", async () => {
-    const firstSendResponse = await handleRequest(
+  test("start chat creates a Chat, streams the Agent response, and persists completed Prompt history", async () => {
+    const startChatResponse = await handleRequest(
       new Request("http://localhost/api/chats/first-send", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -23,10 +23,10 @@ describe("LifeOS database boundary", () => {
       }),
     );
 
-    expect(firstSendResponse.status).toBe(200);
-    expect(firstSendResponse.headers.get("content-type")).toContain("text/event-stream");
+    expect(startChatResponse.status).toBe(200);
+    expect(startChatResponse.headers.get("content-type")).toContain("text/event-stream");
 
-    const streamText = await firstSendResponse.text();
+    const streamText = await startChatResponse.text();
     const events = streamText
       .trim()
       .split("\n\n")

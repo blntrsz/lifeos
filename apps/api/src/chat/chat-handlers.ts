@@ -1,45 +1,41 @@
 import { ChatService } from "@template/core/chat/service/chat.service";
-import { ChatId } from "@template/core/domain/chat.model";
-import { Effect, Layer, Stream } from "effect";
-import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/unstable/http";
+import * as ChatModel from "@template/core/domain/chat.model";
+import { Effect, Stream } from "effect";
+import * as Sse from "effect/unstable/encoding/Sse";
+import { HttpServerResponse } from "effect/unstable/http";
+import { HttpApiBuilder, HttpApiError } from "effect/unstable/httpapi";
 
-import { ChatApi, ChatJsonResponse } from "./chat-api.ts";
+import { ChatApi, ChatSseEvent } from "./chat-api.ts";
 
-const sse = (event: string, data: unknown) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+export const ChatHandlers = HttpApiBuilder.group(ChatApi, "Chats", (handlers) =>
+  handlers
+    .handle("startChat", ({ payload }) =>
+      Effect.gen(function* () {
+        const chats = yield* ChatService;
+        const result = yield* chats.startChat(payload).pipe(Effect.orDie);
+        const stream = Stream.make(
+          { event: "chat" as const, id: undefined, data: ChatModel.toMetadata(result.chat) },
+          { event: "delta" as const, id: undefined, data: { text: result.agentText } },
+          { event: "done" as const, id: undefined, data: { reason: "complete" as const } },
+        ).pipe(Stream.pipeThroughChannel(Sse.encodeSchema(ChatSseEvent)), Stream.encodeText);
 
-export const ChatHandlers = Layer.mergeAll(
-  HttpRouter.add("POST", ChatApi.firstSendPath, () =>
-    Effect.gen(function* () {
-      const input = yield* HttpServerRequest.schemaBodyJson(ChatApi.firstSendPayload);
-      const chats = yield* ChatService;
-      const result = yield* chats.firstSend(input).pipe(Effect.orDie);
-      const stream = Stream.make(
-        sse("chat", result.chat),
-        sse("delta", { text: result.agentText }),
-        sse("done", { reason: "complete" }),
-      ).pipe(Stream.encodeText);
+        return HttpServerResponse.stream(stream, {
+          contentType: "text/event-stream",
+          headers: {
+            "cache-control": "no-cache",
+          },
+        });
+      }),
+    )
+    .handle("get", ({ params }) =>
+      Effect.gen(function* () {
+        const chats = yield* ChatService;
+        const chat = yield* chats.get(params.id).pipe(
+          Effect.catchTag("NoSuchElementError", () => Effect.fail(new HttpApiError.NotFound({}))),
+          Effect.catchTag("SchemaError", () => Effect.fail(new HttpApiError.BadRequest())),
+        );
 
-      return HttpServerResponse.stream(stream, {
-        contentType: "text/event-stream",
-        headers: {
-          "cache-control": "no-cache",
-        },
-      });
-    }),
-  ),
-  HttpRouter.add("GET", ChatApi.getPath, (request) =>
-    Effect.gen(function* () {
-      const id = ChatId.make(request.url.slice(request.url.lastIndexOf("/") + 1));
-      const chats = yield* ChatService;
-      const chat = yield* chats
-        .get(id)
-        .pipe(Effect.catchTag("NoSuchElementError", () => Effect.succeed(null)));
-
-      if (chat === null) {
-        return HttpServerResponse.empty({ status: 404 });
-      }
-
-      return yield* ChatJsonResponse(chat);
-    }),
-  ),
+        return chat;
+      }),
+    ),
 );

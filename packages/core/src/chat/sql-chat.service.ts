@@ -1,5 +1,4 @@
-import { DateTime, Effect, Layer } from "effect";
-import { Model } from "effect/unstable/schema";
+import { Effect, Layer } from "effect";
 import { SqlModel } from "effect/unstable/sql";
 
 import * as ChatModel from "@/domain/chat.model";
@@ -15,28 +14,17 @@ export const SqlChatService = Layer.effect(
       spanPrefix: "SqlChatService",
     });
 
-    const firstSend: IChatService["firstSend"] = Effect.fn("SqlChatService.firstSend")(
+    const startChat: IChatService["startChat"] = Effect.fn("SqlChatService.startChat")(
       function* (input) {
-        const chatId = yield* ChatModel.createChatId();
-        const title = ChatModel.deriveTitle(input.message.text);
-        const agentText = `Agent received: ${input.message.text}`;
-        const history = yield* ChatModel.createCompletedHistory(input.message.text, agentText);
-        const timestamp = yield* DateTime.now;
-
-        const chat = ChatModel.ChatModel.insert.make({
-          id: chatId,
-          title,
-          createdAt: Model.Override(timestamp),
-          updatedAt: Model.Override(timestamp),
-          history,
-        });
+        const agentText = ChatModel.createPlaceholderAgentText(input.message.text);
+        const chat = yield* ChatModel.make(input, agentText);
 
         const persistedChat = yield* repository
           .insert(chat)
           .pipe(Effect.catchTag("SqlError", (error) => Effect.die(error)));
 
         return {
-          chat: ChatModel.encodeChatMetadata(persistedChat),
+          chat: persistedChat,
           agentText,
         };
       },
@@ -49,7 +37,7 @@ export const SqlChatService = Layer.effect(
     });
 
     return {
-      firstSend,
+      startChat,
       get,
     };
   }),

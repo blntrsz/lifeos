@@ -7,6 +7,7 @@ import { Context, Layer } from "effect";
 import { Etag, HttpPlatform, HttpRouter } from "effect/unstable/http";
 import { HttpApiBuilder, HttpApiScalar } from "effect/unstable/httpapi";
 
+import { ChatApi } from "./chat/chat-api.ts";
 import { ChatHandlers } from "./chat/chat-handlers.ts";
 import { TaskApi } from "./task/task-api.ts";
 import { TaskHandlers } from "./task/task-handlers.ts";
@@ -21,9 +22,12 @@ const makeAppLive = (databaseFilename = lifeOsDbPath) => {
     Layer.provide(UlidIdService),
   );
 
-  return HttpApiBuilder.layer(TaskApi).pipe(
-    Layer.provide(ChatHandlers),
-    Layer.provide(TaskHandlers),
+  const ApiLive = Layer.mergeAll(
+    HttpApiBuilder.layer(TaskApi).pipe(Layer.provide(TaskHandlers)),
+    HttpApiBuilder.layer(ChatApi).pipe(Layer.provide(ChatHandlers)),
+  );
+
+  return ApiLive.pipe(
     Layer.provide(HttpApiScalar.layer(TaskApi)),
     Layer.provideMerge(ServicesLive),
     Layer.provideMerge(UlidIdService),
@@ -38,4 +42,5 @@ export const AppLive = makeAppLive();
 
 export const { handler, dispose } = HttpRouter.toWebHandler(AppLive);
 
-export const handleRequest = (request: Request) => handler(request, Context.empty());
+export const handleRequest = (request: Request) =>
+  handler(request, Context.empty() as Context.Context<unknown>);
