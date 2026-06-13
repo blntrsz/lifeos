@@ -1,18 +1,12 @@
 import { ChatService } from "@template/core/chat/service/chat.service";
 import { ChatId, FirstSendInput, type ChatRecord } from "@template/core/domain/chat.model";
-import { Effect, Layer, Schema, Stream } from "effect";
-import { Prompt } from "effect/unstable/ai";
+import * as ChatModel from "@template/core/domain/chat.model";
+import { Effect, Layer, Stream } from "effect";
 import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/unstable/http";
 
 const sse = (event: string, data: unknown) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 
-const encodeChatRecord = (chat: ChatRecord) => ({
-  id: chat.id,
-  title: chat.title,
-  createdAt: chat.createdAt,
-  updatedAt: chat.updatedAt,
-  history: Schema.encodeSync(Prompt.Prompt)(chat.history),
-});
+const encodeChatRecord = (chat: ChatRecord) => ChatModel.encodeChatRecord(chat);
 
 export const ChatRoutes = Layer.mergeAll(
   HttpRouter.add("POST", "/api/chats/first-send", () =>

@@ -1,25 +1,46 @@
-import { Effect, Schema } from "effect";
+import { Effect, Ref, Schema } from "effect";
 import { Chat, Prompt } from "effect/unstable/ai";
+import { Model } from "effect/unstable/schema";
 
 import { IdService } from "@/domain/id/service/id.service";
 
 export const ChatId = Schema.String.pipe(Schema.brand("ChatId"));
 
-export const ChatMetadata = Schema.Struct({
-  id: ChatId,
+export class ChatModel extends Model.Class<ChatModel>("Chat")({
+  id: Model.GeneratedByApp(ChatId),
   title: Schema.String,
-  createdAt: Schema.String,
-  updatedAt: Schema.String,
-});
-
-export type ChatMetadata = typeof ChatMetadata.Type;
-
-export const ChatRecord = Schema.Struct({
-  ...ChatMetadata.fields,
+  createdAt: Model.DateTimeInsert,
+  updatedAt: Model.DateTimeUpdate,
   history: Schema.fromJsonString(Prompt.Prompt),
+}) {}
+
+export type ChatRecord = typeof ChatModel.Type;
+
+export type ChatMetadata = {
+  readonly id: string;
+  readonly title: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+};
+
+const encodeChatModelJson = Schema.encodeSync(ChatModel.json);
+const encodePromptJson = Schema.encodeSync(Prompt.Prompt);
+
+export const encodeChatRecord = (chat: ChatRecord) => ({
+  ...encodeChatModelJson(chat),
+  history: encodePromptJson(chat.history),
 });
 
-export type ChatRecord = typeof ChatRecord.Type;
+export const encodeChatMetadata = (chat: ChatRecord): ChatMetadata => {
+  const encoded = encodeChatModelJson(chat);
+
+  return {
+    id: encoded.id,
+    title: encoded.title,
+    createdAt: encoded.createdAt,
+    updatedAt: encoded.updatedAt,
+  };
+};
 
 export const FirstSendInput = Schema.Struct({
   message: Schema.Struct({
@@ -42,13 +63,14 @@ export const deriveTitle = (messageText: string) => {
   return title.length === 0 ? "Untitled Chat" : title;
 };
 
-export const createCompletedHistoryJson = Effect.fn("ChatModel.createCompletedHistoryJson")(
-  function* (userText: string, agentText: string) {
-    const chat = yield* Chat.fromPrompt([
-      { role: "user", content: userText },
-      { role: "assistant", content: agentText },
-    ]);
+export const createCompletedHistory = Effect.fn("ChatModel.createCompletedHistory")(function* (
+  userText: string,
+  agentText: string,
+) {
+  const chat = yield* Chat.fromPrompt([
+    { role: "user", content: userText },
+    { role: "assistant", content: agentText },
+  ]);
 
-    return yield* chat.exportJson.pipe(Effect.orDie);
-  },
-);
+  return yield* Ref.get(chat.history);
+});
