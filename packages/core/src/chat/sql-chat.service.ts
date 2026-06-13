@@ -23,18 +23,20 @@ export const SqlChatService = Layer.effect(
         const history = yield* ChatModel.createCompletedHistory(input.message.text, agentText);
         const timestamp = yield* DateTime.now;
 
-        const chat = yield* repository
-          .insert({
-            id: chatId,
-            title,
-            createdAt: Model.Override(timestamp),
-            updatedAt: Model.Override(timestamp),
-            history,
-          })
+        const chat = ChatModel.ChatModel.insert.make({
+          id: chatId,
+          title,
+          createdAt: Model.Override(timestamp),
+          updatedAt: Model.Override(timestamp),
+          history,
+        });
+
+        const persistedChat = yield* repository
+          .insert(chat)
           .pipe(Effect.catchTag("SqlError", (error) => Effect.die(error)));
 
         return {
-          chat: ChatModel.encodeChatMetadata(chat),
+          chat: ChatModel.encodeChatMetadata(persistedChat),
           agentText,
         };
       },
