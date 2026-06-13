@@ -1,3 +1,6 @@
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
+
 import { SqliteClient, SqliteMigrator } from "@effect/sql-sqlite-bun";
 import { Effect, Layer } from "effect";
 
@@ -20,6 +23,8 @@ export const LifeOsDatabaseLive = (filename: string) => {
 
   return Layer.unwrap(
     Effect.gen(function* () {
+      yield* Effect.sync(() => mkdirSync(dirname(filename), { recursive: true }));
+
       const migrate = SqliteMigrator.run({
         loader: loadMigrations,
       });
