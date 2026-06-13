@@ -1,11 +1,12 @@
 import { ChatService } from "@template/core/chat/service/chat.service";
+import { ChatSseEvent } from "@template/core/domain/chat-sse.model";
 import * as ChatModel from "@template/core/domain/chat.model";
 import { Effect, Stream } from "effect";
 import * as Sse from "effect/unstable/encoding/Sse";
 import { HttpServerResponse } from "effect/unstable/http";
 import { HttpApiBuilder, HttpApiError } from "effect/unstable/httpapi";
 
-import { ChatApi, ChatSseEvent } from "./chat-api.ts";
+import { ChatApi } from "./chat-api.ts";
 
 export const ChatHandlers = HttpApiBuilder.group(ChatApi, "Chats", (handlers) =>
   handlers

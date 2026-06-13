@@ -55,6 +55,12 @@
       "skillPath": "skills/retro/SKILL.md",
       "computedHash": "7cb53e9a9a3132e10963d1141e73b6a4f69406b94ada066e0364b623eaf31458"
     },
+    "review": {
+      "source": "blntrsz/skills",
+      "sourceType": "github",
+      "skillPath": "skills/review/SKILL.md",
+      "computedHash": "aac4023cded45a5abe061351a6b3fa791794eb2929ed3cdcbdb93d8d031c5b2d"
+    },
     "setup-matt-pocock-skills": {
       "source": "mattpocock/skills",
       "sourceType": "github",
