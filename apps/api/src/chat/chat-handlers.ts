@@ -1,17 +1,16 @@
 import { ChatService } from "@template/core/chat/service/chat.service";
-import { ChatId, FirstSendInput } from "@template/core/domain/chat.model";
-import * as ChatModel from "@template/core/domain/chat.model";
+import { ChatId } from "@template/core/domain/chat.model";
 import { Effect, Layer, Stream } from "effect";
 import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/unstable/http";
 
+import { ChatApi, ChatJsonResponse } from "./chat-api.ts";
+
 const sse = (event: string, data: unknown) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 
-const chatJsonResponse = HttpServerResponse.schemaJson(ChatModel.ChatModel.json);
-
-export const ChatRoutes = Layer.mergeAll(
-  HttpRouter.add("POST", "/api/chats/first-send", () =>
+export const ChatHandlers = Layer.mergeAll(
+  HttpRouter.add("POST", ChatApi.firstSendPath, () =>
     Effect.gen(function* () {
-      const input = yield* HttpServerRequest.schemaBodyJson(FirstSendInput);
+      const input = yield* HttpServerRequest.schemaBodyJson(ChatApi.firstSendPayload);
       const chats = yield* ChatService;
       const result = yield* chats.firstSend(input).pipe(Effect.orDie);
       const stream = Stream.make(
@@ -28,7 +27,7 @@ export const ChatRoutes = Layer.mergeAll(
       });
     }),
   ),
-  HttpRouter.add("GET", "/api/chats/:id", (request) =>
+  HttpRouter.add("GET", ChatApi.getPath, (request) =>
     Effect.gen(function* () {
       const id = ChatId.make(request.url.slice(request.url.lastIndexOf("/") + 1));
       const chats = yield* ChatService;
@@ -40,7 +39,7 @@ export const ChatRoutes = Layer.mergeAll(
         return HttpServerResponse.empty({ status: 404 });
       }
 
-      return yield* chatJsonResponse(chat);
+      return yield* ChatJsonResponse(chat);
     }),
   ),
 );
