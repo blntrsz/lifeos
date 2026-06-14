@@ -56,10 +56,12 @@ describe("root chat route", () => {
       expect(fetchMock).toHaveBeenCalled();
     });
 
-    const [url, options] = fetchMock.mock.calls[0] as [URL, RequestInit];
-    expect(url.pathname).toBe("/api/chats/start-chat");
+    const [urlArg, options] = fetchMock.mock.calls[0] as [string | URL, RequestInit];
+    const pathname = typeof urlArg === "string" ? new URL(urlArg, "http://localhost").pathname : urlArg.pathname;
+    expect(pathname).toBe("/api/chats/start-chat");
     expect(options.method).toBe("POST");
-    expect(new TextDecoder().decode(options.body as Uint8Array)).toBe(
+    const bodyStr = typeof options.body === "string" ? options.body : new TextDecoder().decode(options.body as Uint8Array);
+    expect(bodyStr).toBe(
       JSON.stringify({ message: { text: "Hello" } }),
     );
 
@@ -287,10 +289,12 @@ describe("root chat route", () => {
       expect(fetchMock).toHaveBeenCalled();
     });
 
-    const [url, options] = fetchMock.mock.calls[0] as [URL, RequestInit];
-    expect(url.pathname).toBe("/api/chats/start-chat");
+    const [urlArg, options] = fetchMock.mock.calls[0] as [string | URL, RequestInit];
+    const pathname = typeof urlArg === "string" ? new URL(urlArg, "http://localhost").pathname : urlArg.pathname;
+    expect(pathname).toBe("/api/chats/start-chat");
     expect(options.method).toBe("POST");
-    expect(new TextDecoder().decode(options.body as Uint8Array)).toBe(
+    const bodyStr = typeof options.body === "string" ? options.body : new TextDecoder().decode(options.body as Uint8Array);
+    expect(bodyStr).toBe(
       JSON.stringify({ message: { text: "Line 1\nLine 2" } }),
     );
 

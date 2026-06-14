@@ -71,3 +71,110 @@ export const composerState = Atom.make((get) => {
     streamedText: get(streamedText),
   };
 });
+
+export type ChatMessage =
+  | { readonly role: "user"; readonly content: string }
+  | { readonly role: "assistant"; readonly content: string; readonly streaming?: boolean };
+
+export const chatMessages = Atom.make<ReadonlyArray<ChatMessage>>([]);
+
+export const loadChat = chatRuntime.fn<string>()((id, get) =>
+  Effect.gen(function* () {
+    const service = yield* ChatService;
+    const chat = yield* service.getChat(id);
+
+    const messages: Array<ChatMessage> = [];
+
+    if (chat.history?.content !== undefined) {
+      for (const item of chat.history.content) {
+        if (item.role === "user" || item.role === "assistant") {
+          const content = extractTextContent(item.content);
+          messages.push({ role: item.role, content });
+        }
+      }
+    }
+
+    get.set(chatMessages, messages);
+    return chat;
+  }),
+);
+
+export const continueComposerText = Atom.make("");
+
+export const continueStreamedText = Atom.make("");
+
+export type ContinueInput = { readonly chatId: string; readonly text: string };
+
+export const sendContinueMessage = chatRuntime.fn<ContinueInput>()((input, get) =>
+  Effect.gen(function* () {
+    const trimmed = input.text.trim();
+    if (trimmed.length === 0) {
+      return yield* Effect.fail(new ChatMessageRequiredError());
+    }
+
+    const currentMessages = get(chatMessages);
+    get.set(chatMessages, [...currentMessages, { role: "user", content: trimmed }]);
+    get.set(continueComposerText, "");
+    get.set(continueStreamedText, "");
+
+    const service = yield* ChatService;
+
+    const events = yield* service.continueChat(input.chatId, { message: { text: trimmed } });
+
+    yield* Stream.runForEach(events, (event) =>
+      Effect.sync(() => {
+        if (event.event === "delta") {
+          const current = get(continueStreamedText);
+          get.set(continueStreamedText, `${current}${event.data.text}`);
+        } else if (event.event === "done") {
+          const streamed = get(continueStreamedText);
+          const msgs = get(chatMessages);
+          get.set(chatMessages, [...msgs, { role: "assistant", content: streamed }]);
+          get.set(continueStreamedText, "");
+        }
+      }),
+    );
+
+    return true;
+  }),
+);
+
+export const resetContinueComposer = Atom.fn<void>()((_, get) =>
+  Effect.sync(() => {
+    get.set(continueComposerText, "");
+    get.set(continueStreamedText, "");
+    get.set(sendContinueMessage, Atom.Reset);
+  }),
+);
+
+export const continueState = Atom.make((get) => {
+  const text = get(continueComposerText);
+  const sendState = get(sendContinueMessage);
+  const sending = !AsyncResult.isInitial(sendState) && sendState.waiting;
+  const streamed = get(continueStreamedText);
+
+  return {
+    text,
+    canSend: text.trim().length > 0 && !sending,
+    sending,
+    sendError: AsyncResult.isFailure(sendState) ? String(sendState.cause) : null,
+    streamedText: streamed,
+    isStreaming: streamed.length > 0 || sending,
+  };
+});
+
+const extractTextContent = (content: unknown): string => {
+  if (typeof content === "string") {
+    return content;
+  }
+  if (Array.isArray(content)) {
+    return content
+      .filter(
+        (part): part is { readonly type: "text"; readonly text: string } =>
+          typeof part === "object" && part !== null && (part as Record<string, unknown>).type === "text",
+      )
+      .map((part) => part.text)
+      .join("");
+  }
+  return "";
+};

@@ -14,6 +14,36 @@ function isDesktop() {
   return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 }
 
+type ComposerInputProps = {
+  readonly text: string;
+  readonly onChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  readonly onKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  readonly onSend: () => void;
+  readonly canSend: boolean;
+};
+
+export const ComposerInput = forwardRef<HTMLTextAreaElement, ComposerInputProps>(
+  ({ text, onChange, onKeyDown, onSend, canSend }, ref) => {
+    return (
+      <div className="flex w-full max-w-2xl items-end gap-2 rounded-2xl border border-border bg-card p-3 shadow-sm">
+        <textarea
+          ref={ref}
+          className="max-h-40 min-h-[3rem] flex-1 resize-none bg-transparent px-3 py-2 text-foreground outline-none"
+          placeholder="What would you like to focus on?"
+          value={text}
+          onChange={onChange}
+          onKeyDown={onKeyDown}
+          rows={1}
+        />
+        <Button size="icon" disabled={!canSend} onClick={onSend} aria-label="Send message">
+          <Send className="size-4" />
+        </Button>
+      </div>
+    );
+  },
+);
+ComposerInput.displayName = "ComposerInput";
+
 export function ChatComposer() {
   const state = useAtomValue(ChatAtoms.composerState);
   const sendResult = useAtomValue(ChatAtoms.sendFirstMessage);
@@ -129,32 +159,3 @@ export function ChatComposer() {
   );
 }
 
-type ComposerInputProps = {
-  readonly text: string;
-  readonly onChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  readonly onKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
-  readonly onSend: () => void;
-  readonly canSend: boolean;
-};
-
-const ComposerInput = forwardRef<HTMLTextAreaElement, ComposerInputProps>(
-  ({ text, onChange, onKeyDown, onSend, canSend }, ref) => {
-    return (
-      <div className="flex w-full max-w-2xl items-end gap-2 rounded-2xl border border-border bg-card p-3 shadow-sm">
-        <textarea
-          ref={ref}
-          className="max-h-40 min-h-[3rem] flex-1 resize-none bg-transparent px-3 py-2 text-foreground outline-none"
-          placeholder="What would you like to focus on?"
-          value={text}
-          onChange={onChange}
-          onKeyDown={onKeyDown}
-          rows={1}
-        />
-        <Button size="icon" disabled={!canSend} onClick={onSend} aria-label="Send message">
-          <Send className="size-4" />
-        </Button>
-      </div>
-    );
-  },
-);
-ComposerInput.displayName = "ComposerInput";
