@@ -9,10 +9,16 @@ export type StartChatResult = {
   readonly agentText: string;
 };
 
+export type ContinueChatResult = StartChatResult;
+
 export interface IChatService {
   startChat(
     input: ChatModel.StartChatInput,
   ): Effect.Effect<StartChatResult, SchemaError, IdService>;
+  continueChat(
+    id: typeof ChatModel.ChatId.Type,
+    input: ChatModel.ContinueChatInput,
+  ): Effect.Effect<ContinueChatResult, Cause.NoSuchElementError | SchemaError>;
   get(
     id: typeof ChatModel.ChatId.Type,
   ): Effect.Effect<ChatModel.Type, Cause.NoSuchElementError | SchemaError>;

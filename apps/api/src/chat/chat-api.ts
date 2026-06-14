@@ -1,4 +1,4 @@
-import { ChatId, StartChatInput } from "@template/core/domain/chat.model";
+import { ChatId, ContinueChatInput, StartChatInput } from "@template/core/domain/chat.model";
 import * as ChatModel from "@template/core/domain/chat.model";
 import { Schema } from "effect";
 import {
@@ -19,6 +19,12 @@ export const ChatApi = HttpApi.make("ChatApi")
       HttpApiEndpoint.post("startChat", "/chats/start-chat", {
         payload: StartChatInput,
         success: Schema.String.pipe(HttpApiSchema.asText()),
+      }),
+      HttpApiEndpoint.post("continueChat", "/chats/:id/messages", {
+        params: ChatIdParams,
+        payload: ContinueChatInput,
+        success: Schema.String.pipe(HttpApiSchema.asText()),
+        error: [HttpApiError.NotFound, HttpApiError.BadRequest],
       }),
       HttpApiEndpoint.get("get", "/chats/:id", {
         params: ChatIdParams,

@@ -14,6 +14,7 @@ export class ChatModel extends Model.Class<ChatModel>("Chat")({
   history: Model.Field({
     select: Schema.fromJsonString(Prompt.Prompt),
     insert: Schema.fromJsonString(Prompt.Prompt),
+    update: Schema.fromJsonString(Prompt.Prompt),
     json: Prompt.Prompt,
   }),
 }) {}
@@ -50,6 +51,9 @@ export const StartChatInput = Schema.Struct({
 
 export type StartChatInput = typeof StartChatInput.Type;
 
+export const ContinueChatInput = StartChatInput;
+export type ContinueChatInput = typeof ContinueChatInput.Type;
+
 export const createChatId = Effect.fn("ChatModel.createChatId")(function* () {
   const idService = yield* IdService;
   const id = yield* idService.create();
@@ -76,6 +80,16 @@ export const createCompletedHistory = Effect.fn("ChatModel.createCompletedHistor
 
   return yield* Ref.get(chat.history);
 });
+
+export const appendCompletedHistory = (
+  existingHistory: Prompt.Prompt,
+  userText: string,
+  agentText: string,
+) =>
+  Prompt.concat(existingHistory, [
+    { role: "user", content: userText },
+    { role: "assistant", content: agentText },
+  ]);
 
 export const make = Effect.fn("ChatModel.make")(function* (
   input: StartChatInput,
