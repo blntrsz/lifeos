@@ -1,4 +1,4 @@
-import { Effect, Layer } from "effect";
+import { Clock, Effect, Layer } from "effect";
 import { SqlModel } from "effect/unstable/sql";
 
 import * as ChatModel from "@/domain/chat.model";
@@ -30,6 +30,41 @@ export const SqlChatService = Layer.effect(
       },
     );
 
+    const continueChat: IChatService["continueChat"] = Effect.fn("SqlChatService.continueChat")(
+      function* (id, input) {
+        const existing = yield* repository
+          .findById(id)
+          .pipe(Effect.catchTag("SqlError", (error) => Effect.die(error)));
+
+        const agentText = ChatModel.createPlaceholderAgentText(input.message.text);
+        const history = ChatModel.appendCompletedHistory(
+          existing.history,
+          input.message.text,
+          agentText,
+        );
+        const updatedAt = yield* Clock.currentTimeMillis.pipe(
+          Effect.map((millis) => new Date(millis)),
+        );
+
+        const updatedChat = yield* repository
+          .update(
+            ChatModel.ChatModel.update.make({
+              id,
+              title: existing.title,
+              createdAt: existing.createdAt,
+              updatedAt,
+              history,
+            }),
+          )
+          .pipe(Effect.catchTag("SqlError", (error) => Effect.die(error)));
+
+        return {
+          chat: updatedChat,
+          agentText,
+        };
+      },
+    );
+
     const get: IChatService["get"] = Effect.fn("SqlChatService.get")(function* (id) {
       return yield* repository
         .findById(id)
@@ -38,6 +73,7 @@ export const SqlChatService = Layer.effect(
 
     return {
       startChat,
+      continueChat,
       get,
     };
   }),

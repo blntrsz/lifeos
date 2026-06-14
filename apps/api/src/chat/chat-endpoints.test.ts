@@ -36,6 +36,66 @@ const parseSseEvents = (streamText: string) =>
     });
 
 describe("chat endpoints", () => {
+  test("continue chat appends user and Agent turns to persisted Prompt history and streams SSE", async () => {
+    const startChatResponse = await handler(
+      new Request("http://localhost/api/chats/start-chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ message: { text: "Help me plan today" } }),
+      }),
+    );
+
+    expect(startChatResponse.status).toBe(200);
+
+    const startEvents = parseSseEvents(await startChatResponse.text());
+    const chat = startEvents[0]?.data as { readonly id: string };
+
+    const continueResponse = await handler(
+      new Request(`http://localhost/api/chats/${chat.id}/messages`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ message: { text: "What should I do next?" } }),
+      }),
+    );
+
+    expect(continueResponse.status).toBe(200);
+    expect(continueResponse.headers.get("content-type")).toContain("text/event-stream");
+
+    const events = parseSseEvents(await continueResponse.text());
+
+    expect(events).toEqual([
+      {
+        event: "chat",
+        data: {
+          id: chat.id,
+          title: "Help me plan today",
+          createdAt: expect.any(String),
+          updatedAt: expect.any(String),
+        },
+      },
+      { event: "delta", data: { text: "Agent received: What should I do next?" } },
+      { event: "done", data: { reason: "complete" } },
+    ]);
+
+    const persistedResponse = await handler(new Request(`http://localhost/api/chats/${chat.id}`));
+
+    expect(persistedResponse.status).toBe(200);
+    expect(await persistedResponse.json()).toEqual({
+      id: ChatId.make(chat.id),
+      title: "Help me plan today",
+      createdAt: events[0]?.data.createdAt,
+      updatedAt: events[0]?.data.updatedAt,
+      history: {
+        content: [
+          { role: "user", content: "Help me plan today", options: {} },
+          { role: "assistant", content: "Agent received: Help me plan today", options: {} },
+          { role: "user", content: "What should I do next?", options: {} },
+          { role: "assistant", content: "Agent received: What should I do next?", options: {} },
+        ],
+      },
+    });
+  });
+
   test("start chat creates a Chat, streams the Agent response, and persists completed Prompt history", async () => {
     const startChatResponse = await handler(
       new Request("http://localhost/api/chats/start-chat", {
@@ -80,5 +140,17 @@ describe("chat endpoints", () => {
         ],
       },
     });
+  });
+
+  test("continuing a missing chat returns not found", async () => {
+    const response = await handler(
+      new Request("http://localhost/api/chats/cht-missing/messages", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ message: { text: "Hello?" } }),
+      }),
+    );
+
+    expect(response.status).toBe(404);
   });
 });
