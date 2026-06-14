@@ -19,6 +19,7 @@ export interface IChatService {
     id: typeof ChatModel.ChatId.Type,
     input: ChatModel.ContinueChatInput,
   ): Effect.Effect<ContinueChatResult, Cause.NoSuchElementError | SchemaError>;
+  list(): Effect.Effect<ReadonlyArray<ChatModel.ChatMetadata>, SchemaError>;
   get(
     id: typeof ChatModel.ChatId.Type,
   ): Effect.Effect<ChatModel.Type, Cause.NoSuchElementError | SchemaError>;

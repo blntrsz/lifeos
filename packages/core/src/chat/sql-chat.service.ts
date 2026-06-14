@@ -1,5 +1,6 @@
-import { Clock, Effect, Layer } from "effect";
-import { SqlModel } from "effect/unstable/sql";
+import { Clock, Effect, Layer, Schema } from "effect";
+import { SqlClient, SqlModel } from "effect/unstable/sql";
+import * as SqlSchema from "effect/unstable/sql/SqlSchema";
 
 import * as ChatModel from "@/domain/chat.model";
 
@@ -8,10 +9,17 @@ import { ChatService, type IChatService } from "./service/chat.service";
 export const SqlChatService = Layer.effect(
   ChatService,
   Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient;
     const repository = yield* SqlModel.makeRepository(ChatModel.ChatModel, {
       idColumn: "id",
       tableName: "chat",
       spanPrefix: "SqlChatService",
+    });
+
+    const listAll = SqlSchema.findAll({
+      Request: Schema.Struct({}),
+      Result: ChatModel.ChatMetadata,
+      execute: () => sql`SELECT id, title, createdAt, updatedAt FROM chat ORDER BY updatedAt DESC`,
     });
 
     const startChat: IChatService["startChat"] = Effect.fn("SqlChatService.startChat")(
@@ -65,6 +73,10 @@ export const SqlChatService = Layer.effect(
       },
     );
 
+    const list: IChatService["list"] = Effect.fn("SqlChatService.list")(function* () {
+      return yield* listAll({}).pipe(Effect.catchTag("SqlError", (error) => Effect.die(error)));
+    });
+
     const get: IChatService["get"] = Effect.fn("SqlChatService.get")(function* (id) {
       return yield* repository
         .findById(id)
@@ -74,6 +86,7 @@ export const SqlChatService = Layer.effect(
     return {
       startChat,
       continueChat,
+      list,
       get,
     };
   }),

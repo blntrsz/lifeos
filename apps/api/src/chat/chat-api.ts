@@ -16,6 +16,9 @@ export const ChatApi = HttpApi.make("ChatApi")
   .annotate(OpenApi.Title, "Chat API")
   .add(
     HttpApiGroup.make("Chats").add(
+      HttpApiEndpoint.get("list", "/chats", {
+        success: Schema.Array(ChatModel.ChatMetadata),
+      }),
       HttpApiEndpoint.post("startChat", "/chats/start-chat", {
         payload: StartChatInput,
         success: Schema.String.pipe(HttpApiSchema.asText()),
