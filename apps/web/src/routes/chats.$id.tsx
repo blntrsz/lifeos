@@ -3,12 +3,12 @@ import { createFileRoute, useParams } from "@tanstack/react-router";
 import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
 import { useEffect, useRef } from "react";
 
-import * as ChatAtoms from "@/chat/chat.atoms";
 import { ComposerInput } from "@/chat/chat-composer";
+import * as ChatAtoms from "@/chat/chat.atoms";
 
 export const Route = createFileRoute("/chats/$id")({ component: ChatPage });
 
-export function ChatPage() {
+function ChatPage() {
   const rawParams = useParams({ strict: false });
   const id = rawParams.id;
 
@@ -32,7 +32,9 @@ export function ChatPage() {
 
   const adjustHeight = () => {
     const el = textareaRef.current;
-    if (el === null) { return; }
+    if (el === null) {
+      return;
+    }
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   };
@@ -43,7 +45,9 @@ export function ChatPage() {
   };
 
   const handleSend = () => {
-    if (!continueState.canSend || id === undefined) { return; }
+    if (!continueState.canSend || id === undefined) {
+      return;
+    }
     void sendContinue({ chatId: id, text: continueState.text });
   };
 

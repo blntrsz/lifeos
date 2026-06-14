@@ -171,7 +171,9 @@ const extractTextContent = (content: unknown): string => {
     return content
       .filter(
         (part): part is { readonly type: "text"; readonly text: string } =>
-          typeof part === "object" && part !== null && (part as Record<string, unknown>).type === "text",
+          typeof part === "object" &&
+          part !== null &&
+          (part as Record<string, unknown>).type === "text",
       )
       .map((part) => part.text)
       .join("");

@@ -1,8 +1,15 @@
-import { ChatSseEvent } from "@template/core/domain/chat-sse.model";
+import type { ChatSseEvent } from "@template/core/domain/chat-sse.model";
 import * as ChatModel from "@template/core/domain/chat.model";
 import { Effect, Layer, Schema, Stream } from "effect";
+import {
+  FetchHttpClient,
+  HttpClient,
+  HttpClientRequest,
+  HttpClientResponse,
+} from "effect/unstable/http";
 
 import { ChatNetworkError } from "@/chat/chat.errors";
+import type { IChatService } from "@/chat/service/chat.service";
 import { ChatService } from "@/chat/service/chat.service";
 
 const parseSseFromText = (text: string): ReadonlyArray<ChatSseEvent> => {
@@ -30,74 +37,41 @@ const parseSseFromText = (text: string): ReadonlyArray<ChatSseEvent> => {
   return events;
 };
 
-export const HttpChatService = Layer.succeed(
+export const HttpChatService = Layer.effect(
   ChatService,
-  ChatService.of({
-    startChat: (input) =>
+  Effect.gen(function* () {
+    const client = yield* HttpClient.HttpClient;
+
+    const startChat: IChatService["startChat"] = (input) =>
       Effect.gen(function* () {
-        const response = yield* Effect.tryPromise({
-          try: () =>
-            fetch("/api/chats/start-chat", {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify(input),
-            }),
-          catch: (error) => new ChatNetworkError({ cause: error }),
-        });
-
-        if (!response.ok) {
-          return yield* Effect.fail(new ChatNetworkError({ cause: `HTTP ${response.status}` }));
-        }
-
-        const text = yield* Effect.tryPromise({
-          try: () => response.text(),
-          catch: (error) => new ChatNetworkError({ cause: error }),
-        });
-
+        const request = HttpClientRequest.post("/api/chats/start-chat").pipe(
+          HttpClientRequest.bodyJsonUnsafe(input),
+        );
+        const response = yield* client.execute(request);
+        yield* HttpClientResponse.filterStatusOk(response);
+        const text = yield* response.text;
         return Stream.fromIterable(parseSseFromText(text));
-      }),
+      }).pipe(Effect.mapError((error) => new ChatNetworkError({ cause: error })));
 
-    getChat: (id) =>
+    const getChat: IChatService["getChat"] = (id) =>
       Effect.gen(function* () {
-        const response = yield* Effect.tryPromise({
-          try: () => fetch(`/api/chats/${id}`),
-          catch: (error) => new ChatNetworkError({ cause: error }),
-        });
-
-        if (!response.ok) {
-          return yield* Effect.fail(new ChatNetworkError({ cause: `HTTP ${response.status}` }));
-        }
-
-        const json = yield* Effect.tryPromise({
-          try: () => response.json(),
-          catch: (error) => new ChatNetworkError({ cause: error }),
-        });
-
+        const response = yield* client.get(`/api/chats/${id}`);
+        yield* HttpClientResponse.filterStatusOk(response);
+        const json = yield* response.json;
         return Schema.decodeUnknownSync(ChatModel.ChatModel.json)(json);
-      }),
+      }).pipe(Effect.mapError((error) => new ChatNetworkError({ cause: error })));
 
-    continueChat: (id, input) =>
+    const continueChat: IChatService["continueChat"] = (id, input) =>
       Effect.gen(function* () {
-        const response = yield* Effect.tryPromise({
-          try: () =>
-            fetch(`/api/chats/${id}/messages`, {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify(input),
-            }),
-          catch: (error) => new ChatNetworkError({ cause: error }),
-        });
-
-        if (!response.ok) {
-          return yield* Effect.fail(new ChatNetworkError({ cause: `HTTP ${response.status}` }));
-        }
-
-        const text = yield* Effect.tryPromise({
-          try: () => response.text(),
-          catch: (error) => new ChatNetworkError({ cause: error }),
-        });
-
+        const request = HttpClientRequest.post(`/api/chats/${id}/messages`).pipe(
+          HttpClientRequest.bodyJsonUnsafe(input),
+        );
+        const response = yield* client.execute(request);
+        yield* HttpClientResponse.filterStatusOk(response);
+        const text = yield* response.text;
         return Stream.fromIterable(parseSseFromText(text));
-      }),
+      }).pipe(Effect.mapError((error) => new ChatNetworkError({ cause: error })));
+
+    return { startChat, getChat, continueChat };
   }),
-);
+).pipe(Layer.provide(FetchHttpClient.layer));

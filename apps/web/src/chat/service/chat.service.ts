@@ -13,9 +13,7 @@ export interface IChatService {
   startChat(
     input: StartChatInput,
   ): Effect.Effect<Stream<ChatSseEvent, ChatNetworkError | ChatSseError>, ChatNetworkError>;
-  getChat(
-    id: string,
-  ): Effect.Effect<typeof ChatModelType.Type, ChatNetworkError>;
+  getChat(id: string): Effect.Effect<typeof ChatModelType.Type, ChatNetworkError>;
   continueChat(
     id: string,
     input: ContinueChatInput,

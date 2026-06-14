@@ -38,10 +38,7 @@ describe("chat detail page", () => {
   it("loads persisted chat and displays history", async () => {
     const { fetchMock, restore } = mockFetchWithHandler(() => makeChatJson());
 
-    await renderWithRouter(
-      [{ path: "/chats/$id", component: ChatPage }],
-      "/chats/cht-test",
-    );
+    await renderWithRouter([{ path: "/chats/$id", component: ChatPage }], "/chats/cht-test");
 
     await waitFor(() => {
       expect(screen.getByText("Agent")).toBeDefined();
@@ -78,10 +75,7 @@ describe("chat detail page", () => {
       return makeChatJson();
     });
 
-    await renderWithRouter(
-      [{ path: "/chats/$id", component: ChatPage }],
-      "/chats/cht-test",
-    );
+    await renderWithRouter([{ path: "/chats/$id", component: ChatPage }], "/chats/cht-test");
 
     await waitFor(() => {
       expect(screen.getByText("Hello")).toBeDefined();
@@ -105,10 +99,7 @@ describe("chat detail page", () => {
   it("shows error state for a missing chat", async () => {
     const { restore } = mockFetchWithHandler(() => new Response("Not found", { status: 404 }));
 
-    await renderWithRouter(
-      [{ path: "/chats/$id", component: ChatPage }],
-      "/chats/cht-missing",
-    );
+    await renderWithRouter([{ path: "/chats/$id", component: ChatPage }], "/chats/cht-missing");
 
     await waitFor(() => {
       expect(screen.getByText("Agent")).toBeDefined();
@@ -121,10 +112,7 @@ describe("chat detail page", () => {
   it("does not show edit or retry controls in chat page", async () => {
     const { restore } = mockFetchWithHandler(() => makeChatJson());
 
-    await renderWithRouter(
-      [{ path: "/chats/$id", component: ChatPage }],
-      "/chats/cht-test",
-    );
+    await renderWithRouter([{ path: "/chats/$id", component: ChatPage }], "/chats/cht-test");
 
     await waitFor(() => {
       expect(screen.getByText("Hello")).toBeDefined();
@@ -155,10 +143,7 @@ describe("chat detail page", () => {
 
     const { restore } = mockFetchWithHandler(() => chatJson);
 
-    await renderWithRouter(
-      [{ path: "/chats/$id", component: ChatPage }],
-      "/chats/cht-multi",
-    );
+    await renderWithRouter([{ path: "/chats/$id", component: ChatPage }], "/chats/cht-multi");
 
     await waitFor(() => {
       expect(screen.getByText("First message")).toBeDefined();
@@ -180,10 +165,7 @@ describe("chat detail page", () => {
       return makeChatJson();
     });
 
-    await renderWithRouter(
-      [{ path: "/chats/$id", component: ChatPage }],
-      "/chats/cht-test",
-    );
+    await renderWithRouter([{ path: "/chats/$id", component: ChatPage }], "/chats/cht-test");
 
     await waitFor(() => {
       expect(screen.getByText("Hello")).toBeDefined();
