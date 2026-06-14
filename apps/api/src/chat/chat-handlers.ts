@@ -26,6 +26,12 @@ const chatSseResponse = (result: StartChatResult) => {
 
 export const ChatHandlers = HttpApiBuilder.group(ChatApi, "Chats", (handlers) =>
   handlers
+    .handle("list", () =>
+      Effect.gen(function* () {
+        const chats = yield* ChatService;
+        return yield* chats.list().pipe(Effect.orDie);
+      }),
+    )
     .handle("startChat", ({ payload }) =>
       Effect.gen(function* () {
         const chats = yield* ChatService;
