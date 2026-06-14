@@ -90,7 +90,7 @@ export function ChatPage() {
                   </div>
                 </div>
               ))}
-              {continueState.isStreaming && continueState.streamedText.length === 0 && !continueState.sending && (
+              {continueState.sending && continueState.streamedText.length === 0 && (
                 <div className="flex justify-start">
                   <div className="max-w-[80%] rounded-2xl bg-muted px-4 py-3 text-foreground">
                     <span className="inline-flex gap-1">
