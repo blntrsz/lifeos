@@ -38,7 +38,7 @@ const parseSseEvents = (streamText: string) =>
 describe("chat endpoints", () => {
   test("start chat creates a Chat, streams the Agent response, and persists completed Prompt history", async () => {
     const startChatResponse = await handler(
-      new Request("http://localhost/api/chats/first-send", {
+      new Request("http://localhost/api/chats/start-chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ message: { text: "Help me plan today" } }),

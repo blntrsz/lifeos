@@ -42,13 +42,13 @@ export const toMetadata = (chat: Type): ChatMetadata => {
   };
 };
 
-export const FirstSendInput = Schema.Struct({
+export const StartChatInput = Schema.Struct({
   message: Schema.Struct({
     text: Schema.String,
   }),
 });
 
-export type FirstSendInput = typeof FirstSendInput.Type;
+export type StartChatInput = typeof StartChatInput.Type;
 
 export const createChatId = Effect.fn("ChatModel.createChatId")(function* () {
   const idService = yield* IdService;
@@ -78,7 +78,7 @@ export const createCompletedHistory = Effect.fn("ChatModel.createCompletedHistor
 });
 
 export const make = Effect.fn("ChatModel.make")(function* (
-  input: FirstSendInput,
+  input: StartChatInput,
   agentText: string,
 ) {
   const id = yield* createChatId();

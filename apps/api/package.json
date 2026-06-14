@@ -7,6 +7,7 @@
   },
   "exports": {
     "./layers": "./src/layers.ts",
+    "./chat-api": "./src/chat/chat-api.ts",
     "./task-api": "./src/task/task-api.ts"
   },
   "dependencies": {

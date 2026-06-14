@@ -7,7 +7,10 @@
     "packages/core/migrations/**",
     "packages/rules/**",
     "**/*.test.ts",
+    "**/*.test.tsx",
     "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "apps/web/src/test/test-utils.tsx",
   ],
   "rules": [
     {
@@ -40,6 +43,7 @@
         "ignore": {
           "apps/api/src/layers.ts": ["makeWebHandler"],
           "apps/web/src/router.tsx": ["getRouter"],
+          "apps/web/src/routes/index.tsx": ["Home"],
           "apps/web/src/components/ui/button.tsx": ["buttonVariants"],
         },
       },
