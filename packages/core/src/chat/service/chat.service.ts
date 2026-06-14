@@ -11,7 +11,7 @@ export type StartChatResult = {
 
 export interface IChatService {
   startChat(
-    input: ChatModel.FirstSendInput,
+    input: ChatModel.StartChatInput,
   ): Effect.Effect<StartChatResult, SchemaError, IdService>;
   get(
     id: typeof ChatModel.ChatId.Type,

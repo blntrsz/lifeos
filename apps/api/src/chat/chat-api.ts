@@ -1,4 +1,4 @@
-import { ChatId, FirstSendInput } from "@template/core/domain/chat.model";
+import { ChatId, StartChatInput } from "@template/core/domain/chat.model";
 import * as ChatModel from "@template/core/domain/chat.model";
 import { Schema } from "effect";
 import {
@@ -16,8 +16,8 @@ export const ChatApi = HttpApi.make("ChatApi")
   .annotate(OpenApi.Title, "Chat API")
   .add(
     HttpApiGroup.make("Chats").add(
-      HttpApiEndpoint.post("startChat", "/chats/first-send", {
-        payload: FirstSendInput,
+      HttpApiEndpoint.post("startChat", "/chats/start-chat", {
+        payload: StartChatInput,
         success: Schema.String.pipe(HttpApiSchema.asText()),
       }),
       HttpApiEndpoint.get("get", "/chats/:id", {

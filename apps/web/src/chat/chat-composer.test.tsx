@@ -57,7 +57,7 @@ describe("root chat route", () => {
     });
 
     const [url, options] = fetchMock.mock.calls[0] as [URL, RequestInit];
-    expect(url.pathname).toBe("/api/chats/first-send");
+    expect(url.pathname).toBe("/api/chats/start-chat");
     expect(options.method).toBe("POST");
     expect(new TextDecoder().decode(options.body as Uint8Array)).toBe(
       JSON.stringify({ message: { text: "Hello" } }),
@@ -288,7 +288,7 @@ describe("root chat route", () => {
     });
 
     const [url, options] = fetchMock.mock.calls[0] as [URL, RequestInit];
-    expect(url.pathname).toBe("/api/chats/first-send");
+    expect(url.pathname).toBe("/api/chats/start-chat");
     expect(options.method).toBe("POST");
     expect(new TextDecoder().decode(options.body as Uint8Array)).toBe(
       JSON.stringify({ message: { text: "Line 1\nLine 2" } }),

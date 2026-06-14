@@ -1,9 +1,8 @@
+import { ChatApi } from "@template/api/chat-api";
 import { ChatSseEvent } from "@template/core/domain/chat-sse.model";
 import { Effect, Layer, Schema, Stream } from "effect";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
-import * as HttpClient from "effect/unstable/http/HttpClient";
-import * as HttpClientRequest from "effect/unstable/http/HttpClientRequest";
-import * as HttpClientResponse from "effect/unstable/http/HttpClientResponse";
+import { HttpApiClient } from "effect/unstable/httpapi";
 
 import { ChatNetworkError, ChatSseError } from "@/chat/chat.errors";
 import { ChatService, type IChatService } from "@/chat/service/chat.service";
@@ -16,27 +15,17 @@ type Accumulator =
 
 const baseUrl = () => globalThis.location?.origin ?? "http://localhost:3000";
 
-const LiveFetch = Layer.effect(
-  FetchHttpClient.Fetch,
-  Effect.sync(
-    () => (input: RequestInfo | URL, init?: RequestInit) => globalThis.fetch(input, init),
-  ),
-);
-
 export const HttpChatService = Layer.effect(
   ChatService,
   Effect.gen(function* () {
-    const httpClient = yield* HttpClient.HttpClient;
+    const client = yield* HttpApiClient.make(ChatApi, { baseUrl: baseUrl() });
+    const chats = client.Chats;
 
     const startChat: IChatService["startChat"] = (input) =>
       Effect.gen(function* () {
-        const request = HttpClientRequest.post(`${baseUrl()}/api/chats/first-send`).pipe(
-          HttpClientRequest.bodyJsonUnsafe(input),
-        );
-        const response = yield* httpClient.execute(request).pipe(
-          Effect.flatMap(HttpClientResponse.filterStatusOk),
-          Effect.mapError((error) => new ChatNetworkError({ cause: error })),
-        );
+        const response = yield* chats
+          .startChat({ payload: input, responseMode: "response-only" })
+          .pipe(Effect.mapError((error) => new ChatNetworkError({ cause: error })));
 
         const events = response.stream.pipe(
           Stream.mapError((error) => new ChatNetworkError({ cause: error })),
@@ -92,4 +81,4 @@ export const HttpChatService = Layer.effect(
 
     return { startChat };
   }),
-).pipe(Layer.provide(FetchHttpClient.layer), Layer.provide(LiveFetch));
+).pipe(Layer.provide(FetchHttpClient.layer));
