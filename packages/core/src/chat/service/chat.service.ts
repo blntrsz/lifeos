@@ -23,7 +23,9 @@ export interface IChatService {
   get(
     id: typeof ChatModel.ChatId.Type,
   ): Effect.Effect<ChatModel.Type, Cause.NoSuchElementError | SchemaError>;
-  remove(id: typeof ChatModel.ChatId.Type): Effect.Effect<void, Cause.NoSuchElementError | SchemaError>;
+  remove(
+    id: typeof ChatModel.ChatId.Type,
+  ): Effect.Effect<void, Cause.NoSuchElementError | SchemaError>;
 }
 
 export class ChatService extends Context.Service<ChatService, IChatService>()("ChatService") {}

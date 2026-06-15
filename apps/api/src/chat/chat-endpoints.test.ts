@@ -336,9 +336,7 @@ describe("chat delete endpoints", () => {
     const deleteEvents = parseSseEvents(await deleteResponse.text());
     const deleteChat = deleteEvents[0]?.data as { readonly id: string };
 
-    await handler(
-      new Request(`http://localhost/api/chats/${deleteChat.id}`, { method: "DELETE" }),
-    );
+    await handler(new Request(`http://localhost/api/chats/${deleteChat.id}`, { method: "DELETE" }));
 
     const listResponse = await handler(new Request("http://localhost/api/chats"));
 
