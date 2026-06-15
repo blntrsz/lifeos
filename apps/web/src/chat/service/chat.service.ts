@@ -20,6 +20,7 @@ export interface IChatService {
     input: ContinueChatInput,
   ): Effect.Effect<Stream<ChatSseEvent, ChatNetworkError | ChatSseError>, ChatNetworkError>;
   list(): Effect.Effect<ReadonlyArray<ChatMetadata>, ChatNetworkError>;
+  remove(id: string): Effect.Effect<void, ChatNetworkError>;
 }
 
 export class ChatService extends Context.Service<ChatService, IChatService>()("ChatService") {}

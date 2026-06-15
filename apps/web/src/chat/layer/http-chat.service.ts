@@ -61,6 +61,12 @@ export const HttpChatService = Layer.effect(
         return Schema.decodeUnknownSync(Schema.Array(ChatModel.ChatMetadata))(json);
       }).pipe(Effect.mapError((error) => new ChatNetworkError({ cause: error })));
 
-    return { startChat, getChat, continueChat, list };
+    const remove: IChatService["remove"] = (id) =>
+      Effect.gen(function* () {
+        const response = yield* client.del(`/api/chats/${id}`);
+        yield* HttpClientResponse.filterStatusOk(response);
+      }).pipe(Effect.mapError((error) => new ChatNetworkError({ cause: error })));
+
+    return { startChat, getChat, continueChat, list, remove };
   }),
 ).pipe(Layer.provide(FetchHttpClient.layer));

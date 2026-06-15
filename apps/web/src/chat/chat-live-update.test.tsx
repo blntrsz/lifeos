@@ -176,4 +176,214 @@ describe("chat live updates", () => {
       ]);
     });
   });
+
+  it("returns to the empty composer after deleting the active Chat", async () => {
+    let chats: Array<Chat> = [
+      {
+        id: "cht-1",
+        title: "First chat",
+        createdAt: "2026-01-01",
+        updatedAt: "2026-01-01",
+      },
+    ];
+    const firstHistory: Array<HistoryItem> = [
+      { role: "user", content: "First chat", options: {} },
+      { role: "assistant", content: "Agent received: First chat", options: {} },
+    ];
+
+    const { restore } = mockFetchWithHandler((url, init) => {
+      const urlString = resolveUrl(url);
+      const pathname = new URL(urlString, "http://localhost").pathname;
+
+      if (pathname === "/api/chats/cht-1" && init?.method === "DELETE") {
+        chats = [];
+        return new Response(null, { status: 204 });
+      }
+      if (pathname === "/api/chats") {
+        return createChatJsonResponse(chats);
+      }
+      if (pathname === "/api/chats/cht-1") {
+        return createChatJsonResponse({ ...chats[0], history: { content: firstHistory } });
+      }
+      return new Response("Not found", { status: 404 });
+    });
+    restoreFetch = restore;
+
+    const { router } = await renderWithRouter(
+      [
+        {
+          path: "/",
+          component: () => (
+            <ChatLayout>
+              <Home />
+            </ChatLayout>
+          ),
+        },
+        {
+          path: "/chats/$id",
+          component: () => (
+            <ChatLayout>
+              <ChatPage />
+            </ChatLayout>
+          ),
+        },
+      ],
+      "/chats/cht-1",
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Agent received: First chat")).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete First chat" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("dialog", { name: "Delete Chat" })).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete Chat" }));
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe("/");
+      expect(screen.getByText("Ask your Agent anything...")).toBeDefined();
+      expect(screen.queryByText("First chat")).toBeNull();
+    });
+  });
+
+  it("keeps the selected Chat open after deleting an inactive Chat", async () => {
+    let chats: Array<Chat> = [
+      {
+        id: "cht-1",
+        title: "First chat",
+        createdAt: "2026-01-01",
+        updatedAt: "2026-01-01",
+      },
+      {
+        id: "cht-2",
+        title: "Second chat",
+        createdAt: "2026-01-02",
+        updatedAt: "2026-01-02",
+      },
+    ];
+    const firstHistory: Array<HistoryItem> = [
+      { role: "user", content: "First chat", options: {} },
+      { role: "assistant", content: "Agent received: First chat", options: {} },
+    ];
+
+    const { restore } = mockFetchWithHandler((url, init) => {
+      const urlString = resolveUrl(url);
+      const pathname = new URL(urlString, "http://localhost").pathname;
+
+      if (pathname === "/api/chats/cht-2" && init?.method === "DELETE") {
+        chats = chats.filter((chat) => chat.id !== "cht-2");
+        return new Response(null, { status: 204 });
+      }
+      if (pathname === "/api/chats") {
+        return createChatJsonResponse(chats);
+      }
+      if (pathname === "/api/chats/cht-1") {
+        return createChatJsonResponse({ ...chats[0], history: { content: firstHistory } });
+      }
+      return new Response("Not found", { status: 404 });
+    });
+    restoreFetch = restore;
+
+    const { router } = await renderWithRouter(
+      [
+        {
+          path: "/",
+          component: () => (
+            <ChatLayout>
+              <Home />
+            </ChatLayout>
+          ),
+        },
+        {
+          path: "/chats/$id",
+          component: () => (
+            <ChatLayout>
+              <ChatPage />
+            </ChatLayout>
+          ),
+        },
+      ],
+      "/chats/cht-1",
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Second chat")).toBeDefined();
+      expect(screen.getByText("Agent received: First chat")).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete Second chat" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("dialog", { name: "Delete Chat" })).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete Chat" }));
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe("/chats/cht-1");
+      expect(screen.getByText("Agent received: First chat")).toBeDefined();
+      expect(screen.queryByText("Second chat")).toBeNull();
+    });
+  });
+
+  it("waits for confirmation before deleting a Chat", async () => {
+    const chats: Array<Chat> = [
+      {
+        id: "cht-1",
+        title: "First chat",
+        createdAt: "2026-01-01",
+        updatedAt: "2026-01-01",
+      },
+    ];
+    let deleteCalls = 0;
+
+    const { restore } = mockFetchWithHandler((url, init) => {
+      const urlString = resolveUrl(url);
+      const pathname = new URL(urlString, "http://localhost").pathname;
+
+      if (pathname === "/api/chats/cht-1" && init?.method === "DELETE") {
+        deleteCalls += 1;
+        return new Response(null, { status: 204 });
+      }
+      if (pathname === "/api/chats") {
+        return createChatJsonResponse(chats);
+      }
+      return new Response("Not found", { status: 404 });
+    });
+    restoreFetch = restore;
+
+    await renderWithRouter([
+      {
+        path: "/",
+        component: () => (
+          <ChatLayout>
+            <Home />
+          </ChatLayout>
+        ),
+      },
+      { path: "/chats/$id", component: () => <div>Chat detail</div> },
+    ]);
+
+    await waitFor(() => {
+      expect(screen.getByText("First chat")).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete First chat" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("dialog", { name: "Delete Chat" })).toBeDefined();
+    });
+    expect(deleteCalls).toBe(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Delete Chat" })).toBeNull();
+    });
+    expect(deleteCalls).toBe(0);
+  });
 });

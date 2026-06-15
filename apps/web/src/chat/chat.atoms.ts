@@ -78,8 +78,14 @@ export const composerState = Atom.make((get) => {
 });
 
 export type ChatMessage =
-  | { readonly role: "user"; readonly content: string }
-  | { readonly role: "assistant"; readonly content: string; readonly streaming?: boolean };
+  | { readonly role: "system"; readonly content: ReadonlyArray<string> }
+  | { readonly role: "user"; readonly content: ReadonlyArray<string> }
+  | {
+      readonly role: "assistant";
+      readonly content: ReadonlyArray<string>;
+      readonly streaming?: boolean;
+    }
+  | { readonly role: "tool"; readonly content: ReadonlyArray<string> };
 
 export const chatMessages = Atom.make<ReadonlyArray<ChatMessage>>([]);
 
@@ -107,7 +113,7 @@ export const sendContinueMessage = chatRuntime.fn<ContinueInput>()((input, get) 
     }
 
     const currentMessages = get(chatMessages);
-    get.set(chatMessages, [...currentMessages, { role: "user", content: trimmed }]);
+    get.set(chatMessages, [...currentMessages, { role: "user", content: [trimmed] }]);
     get.set(continueComposerText, "");
     get.set(continueStreamedText, "");
 
@@ -125,7 +131,7 @@ export const sendContinueMessage = chatRuntime.fn<ContinueInput>()((input, get) 
         } else if (event.event === "done") {
           const streamed = get(continueStreamedText);
           const msgs = get(chatMessages);
-          get.set(chatMessages, [...msgs, { role: "assistant", content: streamed }]);
+          get.set(chatMessages, [...msgs, { role: "assistant", content: [streamed] }]);
           get.set(continueStreamedText, "");
         }
       }),
@@ -144,6 +150,14 @@ export const resetContinueComposer = Atom.fn<void>()((_, get) =>
     get.set(continueComposerText, "");
     get.set(continueStreamedText, "");
     get.set(sendContinueMessage, Atom.Reset);
+  }),
+);
+
+export const deleteChat = chatRuntime.fn<string>()((id, get) =>
+  Effect.gen(function* () {
+    const service = yield* ChatService;
+    yield* service.remove(id);
+    get.refresh(chatList);
   }),
 );
 
@@ -172,8 +186,13 @@ const toChatMessages = (chat: {
 
   if (chat.history?.content !== undefined) {
     for (const item of chat.history.content) {
-      if (item.role === "user" || item.role === "assistant") {
-        const content = extractTextContent(item.content);
+      if (
+        item.role === "system" ||
+        item.role === "user" ||
+        item.role === "assistant" ||
+        item.role === "tool"
+      ) {
+        const content = extractContentParts(item.content);
         messages.push({ role: item.role, content });
       }
     }
@@ -182,20 +201,47 @@ const toChatMessages = (chat: {
   return messages;
 };
 
-const extractTextContent = (content: unknown): string => {
+const extractContentParts = (content: unknown): ReadonlyArray<string> => {
   if (typeof content === "string") {
-    return content;
+    return [content];
   }
   if (Array.isArray(content)) {
-    return content
-      .filter(
-        (part): part is { readonly type: "text"; readonly text: string } =>
-          typeof part === "object" &&
-          part !== null &&
-          (part as Record<string, unknown>).type === "text",
-      )
-      .map((part) => part.text)
-      .join("");
+    return content.flatMap(formatPart);
   }
-  return "";
+  return [];
+};
+
+const formatPart = (part: unknown): ReadonlyArray<string> => {
+  if (typeof part !== "object" || part === null) {
+    return [];
+  }
+
+  const record = part as Record<string, unknown>;
+
+  switch (record.type) {
+    case "text":
+      return typeof record.text === "string" ? [record.text] : [];
+    case "file": {
+      const label = typeof record.fileName === "string" ? record.fileName : "file";
+      const mediaType = typeof record.mediaType === "string" ? ` (${record.mediaType})` : "";
+      return [`File: ${label}${mediaType}`];
+    }
+    case "reasoning":
+      return typeof record.text === "string" ? [`Reasoning: ${record.text}`] : [];
+    case "tool-call":
+      return typeof record.name === "string" ? [`Tool call: ${record.name}`] : [];
+    case "tool-result":
+      return typeof record.name === "string" ? [`Tool result: ${record.name}`] : [];
+    case "tool-approval-request":
+      return typeof record.toolCallId === "string"
+        ? [`Approval requested: ${record.toolCallId}`]
+        : [];
+    case "tool-approval-response": {
+      const decision = record.approved === true ? "approved" : "denied";
+      const reason = typeof record.reason === "string" ? `: ${record.reason}` : "";
+      return [`Approval ${decision}${reason}`];
+    }
+    default:
+      return [];
+  }
 };

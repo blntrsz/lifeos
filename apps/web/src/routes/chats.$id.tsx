@@ -85,7 +85,11 @@ function ChatPage() {
                       : "bg-muted text-foreground"
                   }`}
                 >
-                  {message.content}
+                  <div className="space-y-2">
+                    {message.content.map((part, partIndex) => (
+                      <div key={partIndex}>{part}</div>
+                    ))}
+                  </div>
                 </div>
               </div>
             ))}
