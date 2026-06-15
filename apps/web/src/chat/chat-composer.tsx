@@ -93,18 +93,51 @@ export function ChatComposer() {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-background">
-      <header className="flex items-center border-b border-border px-4 py-3">
-        <span className="font-semibold text-foreground">Agent</span>
-      </header>
+    <div className="flex flex-1 flex-col overflow-hidden">
+      {!hasStarted ? (
+        <div className="flex flex-1 flex-col items-center justify-center px-4">
+          <h1 className="mb-8 text-center text-3xl font-semibold text-foreground">
+            Ask your Agent anything...
+          </h1>
 
-      <main className="flex flex-1 flex-col overflow-hidden">
-        {!hasStarted ? (
-          <div className="flex flex-1 flex-col items-center justify-center px-4">
-            <h1 className="mb-8 text-center text-3xl font-semibold text-foreground">
-              Ask your Agent anything...
-            </h1>
+          <ComposerInput
+            ref={textareaRef}
+            text={state.text}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            onSend={handleSend}
+            canSend={state.canSend}
+          />
+        </div>
+      ) : (
+        <div className="flex flex-1 flex-col px-4 py-6">
+          <div className="mx-auto w-full max-w-2xl flex-1 space-y-4 overflow-y-auto">
+            <div className="flex justify-end">
+              <div className="max-w-[80%] rounded-2xl bg-primary px-4 py-3 text-primary-foreground">
+                {state.sentText}
+              </div>
+            </div>
 
+            <div className="flex justify-start">
+              <div className="max-w-[80%] rounded-2xl bg-muted px-4 py-3 text-foreground">
+                {state.sendError !== null ? (
+                  <span className="text-destructive" role="alert">
+                    {state.sendError}
+                  </span>
+                ) : state.streamedText.length === 0 ? (
+                  <span className="inline-flex gap-1">
+                    <span className="animate-bounce">.</span>
+                    <span className="animate-bounce [animation-delay:0.2s]">.</span>
+                    <span className="animate-bounce [animation-delay:0.4s]">.</span>
+                  </span>
+                ) : (
+                  state.streamedText
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="mx-auto w-full max-w-2xl pt-4">
             <ComposerInput
               ref={textareaRef}
               text={state.text}
@@ -114,47 +147,8 @@ export function ChatComposer() {
               canSend={state.canSend}
             />
           </div>
-        ) : (
-          <div className="flex flex-1 flex-col px-4 py-6">
-            <div className="mx-auto w-full max-w-2xl flex-1 space-y-4 overflow-y-auto">
-              <div className="flex justify-end">
-                <div className="max-w-[80%] rounded-2xl bg-primary px-4 py-3 text-primary-foreground">
-                  {state.sentText}
-                </div>
-              </div>
-
-              <div className="flex justify-start">
-                <div className="max-w-[80%] rounded-2xl bg-muted px-4 py-3 text-foreground">
-                  {state.sendError !== null ? (
-                    <span className="text-destructive" role="alert">
-                      {state.sendError}
-                    </span>
-                  ) : state.streamedText.length === 0 ? (
-                    <span className="inline-flex gap-1">
-                      <span className="animate-bounce">.</span>
-                      <span className="animate-bounce [animation-delay:0.2s]">.</span>
-                      <span className="animate-bounce [animation-delay:0.4s]">.</span>
-                    </span>
-                  ) : (
-                    state.streamedText
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="mx-auto w-full max-w-2xl pt-4">
-              <ComposerInput
-                ref={textareaRef}
-                text={state.text}
-                onChange={handleChange}
-                onKeyDown={handleKeyDown}
-                onSend={handleSend}
-                canSend={state.canSend}
-              />
-            </div>
-          </div>
-        )}
-      </main>
+        </div>
+      )}
     </div>
   );
 }

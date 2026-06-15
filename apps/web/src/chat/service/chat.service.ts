@@ -1,5 +1,6 @@
 import type { ChatSseEvent } from "@template/core/domain/chat-sse.model";
 import type {
+  ChatMetadata,
   ChatModel as ChatModelType,
   ContinueChatInput,
   StartChatInput,
@@ -18,6 +19,7 @@ export interface IChatService {
     id: string,
     input: ContinueChatInput,
   ): Effect.Effect<Stream<ChatSseEvent, ChatNetworkError | ChatSseError>, ChatNetworkError>;
+  list(): Effect.Effect<ReadonlyArray<ChatMetadata>, ChatNetworkError>;
 }
 
 export class ChatService extends Context.Service<ChatService, IChatService>()("ChatService") {}
