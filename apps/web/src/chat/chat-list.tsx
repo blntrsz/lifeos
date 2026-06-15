@@ -18,9 +18,7 @@ export function ChatList() {
         New Chat
       </Link>
 
-      {isWaiting && (
-        <span className="px-3 py-2 text-sm text-muted-foreground">Loading...</span>
-      )}
+      {isWaiting && <span className="px-3 py-2 text-sm text-muted-foreground">Loading...</span>}
 
       {chats.map((chat) => (
         <Link

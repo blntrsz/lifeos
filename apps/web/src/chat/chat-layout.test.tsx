@@ -1,14 +1,10 @@
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
-import {
-  createChatJsonResponse,
-  mockFetchWithHandler,
-  renderWithRouter,
-} from "@/test/test-utils";
+import { createChatJsonResponse, mockFetchWithHandler, renderWithRouter } from "@/test/test-utils";
 
-import { ChatLayout } from "./chat-layout";
 import { Home } from "../routes/index";
+import { ChatLayout } from "./chat-layout";
 
 describe("chat layout", () => {
   afterEach(() => {
@@ -30,7 +26,14 @@ describe("chat layout", () => {
     });
 
     await renderWithRouter([
-      { path: "/", component: () => <ChatLayout><Home /></ChatLayout> },
+      {
+        path: "/",
+        component: () => (
+          <ChatLayout>
+            <Home />
+          </ChatLayout>
+        ),
+      },
     ]);
 
     await waitFor(() => {
@@ -51,7 +54,14 @@ describe("chat layout", () => {
     });
 
     const { router } = await renderWithRouter([
-      { path: "/", component: () => <ChatLayout><Home /></ChatLayout> },
+      {
+        path: "/",
+        component: () => (
+          <ChatLayout>
+            <Home />
+          </ChatLayout>
+        ),
+      },
       { path: "/chats/$id", component: () => <div>Chat detail</div> },
     ]);
 
@@ -78,7 +88,14 @@ describe("chat layout", () => {
     });
 
     const { router } = await renderWithRouter([
-      { path: "/", component: () => <ChatLayout><Home /></ChatLayout> },
+      {
+        path: "/",
+        component: () => (
+          <ChatLayout>
+            <Home />
+          </ChatLayout>
+        ),
+      },
       { path: "/chats/$id", component: () => <div>Chat detail</div> },
     ]);
 
