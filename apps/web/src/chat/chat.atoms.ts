@@ -9,6 +9,10 @@ import { ChatService } from "@/chat/service/chat.service";
 
 export const chatRuntime = Atom.runtime(HttpChatService);
 
+export const chatList = chatRuntime
+  .atom(ChatService.use((service) => service.list()))
+  .pipe(Atom.keepAlive);
+
 export const composerText = Atom.make("");
 export const sentText = Atom.make("");
 export const streamedText = Atom.make("");

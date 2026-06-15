@@ -72,6 +72,14 @@ export const HttpChatService = Layer.effect(
         return Stream.fromIterable(parseSseFromText(text));
       }).pipe(Effect.mapError((error) => new ChatNetworkError({ cause: error })));
 
-    return { startChat, getChat, continueChat };
+    const list: IChatService["list"] = () =>
+      Effect.gen(function* () {
+        const response = yield* client.get("/api/chats");
+        yield* HttpClientResponse.filterStatusOk(response);
+        const json = yield* response.json;
+        return Schema.decodeUnknownSync(Schema.Array(ChatModel.ChatMetadata))(json);
+      }).pipe(Effect.mapError((error) => new ChatNetworkError({ cause: error })));
+
+    return { startChat, getChat, continueChat, list };
   }),
 ).pipe(Layer.provide(FetchHttpClient.layer));

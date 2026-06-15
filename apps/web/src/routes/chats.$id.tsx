@@ -59,74 +59,68 @@ function ChatPage() {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-background">
-      <header className="flex items-center border-b border-border px-4 py-3">
-        <span className="font-semibold text-foreground">Agent</span>
-      </header>
-
-      <main className="flex flex-1 flex-col overflow-hidden">
-        {isLoading ? (
-          <div className="flex flex-1 items-center justify-center">
-            <span className="text-muted-foreground">Loading...</span>
-          </div>
-        ) : isError ? (
-          <div className="flex flex-1 items-center justify-center">
-            <span className="text-destructive" role="alert">
-              Chat not found
-            </span>
-          </div>
-        ) : (
-          <div className="flex flex-1 flex-col px-4 py-6">
-            <div className="mx-auto w-full max-w-2xl flex-1 space-y-4 overflow-y-auto">
-              {messages.map((message, index) => (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      {isLoading ? (
+        <div className="flex flex-1 items-center justify-center">
+          <span className="text-muted-foreground">Loading...</span>
+        </div>
+      ) : isError ? (
+        <div className="flex flex-1 items-center justify-center">
+          <span className="text-destructive" role="alert">
+            Chat not found
+          </span>
+        </div>
+      ) : (
+        <div className="flex flex-1 flex-col px-4 py-6">
+          <div className="mx-auto w-full max-w-2xl flex-1 space-y-4 overflow-y-auto">
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+              >
                 <div
-                  key={index}
-                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                    message.role === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-foreground"
+                  }`}
                 >
-                  <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                      message.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-foreground"
-                    }`}
-                  >
-                    {message.content}
-                  </div>
+                  {message.content}
                 </div>
-              ))}
-              {continueState.sending && continueState.streamedText.length === 0 && (
-                <div className="flex justify-start">
-                  <div className="max-w-[80%] rounded-2xl bg-muted px-4 py-3 text-foreground">
-                    <span className="inline-flex gap-1">
-                      <span className="animate-bounce">.</span>
-                      <span className="animate-bounce [animation-delay:0.2s]">.</span>
-                      <span className="animate-bounce [animation-delay:0.4s]">.</span>
-                    </span>
-                  </div>
+              </div>
+            ))}
+            {continueState.sending && continueState.streamedText.length === 0 && (
+              <div className="flex justify-start">
+                <div className="max-w-[80%] rounded-2xl bg-muted px-4 py-3 text-foreground">
+                  <span className="inline-flex gap-1">
+                    <span className="animate-bounce">.</span>
+                    <span className="animate-bounce [animation-delay:0.2s]">.</span>
+                    <span className="animate-bounce [animation-delay:0.4s]">.</span>
+                  </span>
                 </div>
-              )}
-              {continueState.streamedText.length > 0 && (
-                <div className="flex justify-start">
-                  <div className="max-w-[80%] rounded-2xl bg-muted px-4 py-3 text-foreground">
-                    {continueState.streamedText}
-                  </div>
+              </div>
+            )}
+            {continueState.streamedText.length > 0 && (
+              <div className="flex justify-start">
+                <div className="max-w-[80%] rounded-2xl bg-muted px-4 py-3 text-foreground">
+                  {continueState.streamedText}
                 </div>
-              )}
-            </div>
-
-            <div className="mx-auto w-full max-w-2xl pt-4">
-              <ComposerInput
-                ref={textareaRef}
-                text={continueState.text}
-                onChange={handleChange}
-                onKeyDown={handleKeyDown}
-                onSend={handleSend}
-                canSend={continueState.canSend}
-              />
-            </div>
+              </div>
+            )}
           </div>
-        )}
-      </main>
+
+          <div className="mx-auto w-full max-w-2xl pt-4">
+            <ComposerInput
+              ref={textareaRef}
+              text={continueState.text}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              onSend={handleSend}
+              canSend={continueState.canSend}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
