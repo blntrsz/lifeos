@@ -76,6 +76,39 @@ export function mockFetch(response: Response) {
   };
 }
 
+export function mockFetchWithHandler(
+  handler: (url: string | URL | Request, init?: RequestInit) => Response,
+) {
+  const originalFetch = globalThis.fetch;
+  const fetchMock = vi.fn((url: string | URL | Request, init?: RequestInit) =>
+    Promise.resolve(handler(url, init)),
+  );
+  globalThis.fetch = fetchMock;
+
+  return {
+    restore: () => {
+      globalThis.fetch = originalFetch;
+    },
+    fetchMock,
+  };
+}
+
+export function resolveUrl(input: string | URL | Request): string {
+  if (typeof input === "string") {
+    return input;
+  }
+  if (input instanceof URL) {
+    return input.toString();
+  }
+  return input.url;
+}
+
+export function createChatJsonResponse(data: unknown) {
+  return new Response(JSON.stringify(data), {
+    headers: { "content-type": "application/json" },
+  });
+}
+
 let _originalMatchMedia: typeof window.matchMedia | null = null;
 
 export function mockDesktopPointer() {
