@@ -1,13 +1,19 @@
-import { useAtomValue } from "@effect/atom-react";
+import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
 import { Link } from "@tanstack/react-router";
 import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
+import { useEffect } from "react";
 
 import * as ChatAtoms from "@/chat/chat.atoms";
 
 export function ChatList() {
   const result = useAtomValue(ChatAtoms.chatList);
+  const refresh = useAtomRefresh(ChatAtoms.chatList);
   const isWaiting = !AsyncResult.isInitial(result) && result.waiting;
   const chats = AsyncResult.isSuccess(result) ? result.value : [];
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   return (
     <nav className="flex flex-col gap-1 p-2">

@@ -13,15 +13,26 @@ import { Home } from "../routes/index";
 
 const getComposer = () => screen.getAllByPlaceholderText("What would you like to focus on?")[0];
 
+function createCrLfSseResponse(
+  events: ReadonlyArray<{ readonly event: string; readonly data: unknown }>,
+) {
+  return new Response(
+    events
+      .map(({ event, data }) => `event: ${event}\r\ndata: ${JSON.stringify(data)}\r\n\r\n`)
+      .join(""),
+    { headers: { "content-type": "text/event-stream" } },
+  );
+}
+
 describe("root chat route", () => {
   afterEach(() => {
     cleanup();
     restoreDesktopPointer();
   });
-  it("renders the Agent label and a composer", async () => {
+  it("renders the new-chat heading and a composer", async () => {
     await renderWithRouter([{ path: "/", component: Home }]);
 
-    expect(screen.getByText("Agent")).toBeDefined();
+    expect(screen.getByText("Ask your Agent anything...")).toBeDefined();
     expect(getComposer()).toBeDefined();
   });
 
@@ -137,6 +148,40 @@ describe("root chat route", () => {
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe("/chats/cht-test");
+    });
+
+    restore();
+  });
+
+  it("handles CRLF-delimited SSE when creating a Chat", async () => {
+    mockDesktopPointer();
+    const { restore } = mockFetch(
+      createCrLfSseResponse([
+        {
+          event: "chat",
+          data: {
+            id: "cht-crlf",
+            title: "Hello",
+            createdAt: "2026-06-13T00:00:00.000Z",
+            updatedAt: "2026-06-13T00:00:00.000Z",
+          },
+        },
+        { event: "delta", data: { text: "Agent received: Hello" } },
+        { event: "done", data: { reason: "complete" } },
+      ]),
+    );
+
+    const { router } = await renderWithRouter([
+      { path: "/", component: Home },
+      { path: "/chats/$id", component: () => <div>Chat stub</div> },
+    ]);
+
+    const textarea = getComposer();
+    fireEvent.change(textarea, { target: { value: "Hello" } });
+    fireEvent.keyDown(textarea, { key: "Enter", shiftKey: false });
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe("/chats/cht-crlf");
     });
 
     restore();

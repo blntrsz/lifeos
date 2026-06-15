@@ -82,7 +82,7 @@ export function ChatComposer() {
     if (!state.canSend) {
       return;
     }
-    void send();
+    void send().catch(() => undefined);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {

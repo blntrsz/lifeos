@@ -37,6 +37,7 @@ export const sendFirstMessage = chatRuntime.fn<void>()((_, get) =>
       Effect.sync(() => {
         if (event.event === "chat") {
           chat = event.data;
+          get.refresh(chatList);
         } else if (event.event === "delta") {
           const current = get(streamedText);
           get.set(streamedText, `${current}${event.data.text}`);
@@ -87,18 +88,7 @@ export const loadChat = chatRuntime.fn<string>()((id, get) =>
     const service = yield* ChatService;
     const chat = yield* service.getChat(id);
 
-    const messages: Array<ChatMessage> = [];
-
-    if (chat.history?.content !== undefined) {
-      for (const item of chat.history.content) {
-        if (item.role === "user" || item.role === "assistant") {
-          const content = extractTextContent(item.content);
-          messages.push({ role: item.role, content });
-        }
-      }
-    }
-
-    get.set(chatMessages, messages);
+    get.set(chatMessages, toChatMessages(chat));
     return chat;
   }),
 );
@@ -127,7 +117,9 @@ export const sendContinueMessage = chatRuntime.fn<ContinueInput>()((input, get) 
 
     yield* Stream.runForEach(events, (event) =>
       Effect.sync(() => {
-        if (event.event === "delta") {
+        if (event.event === "chat") {
+          get.refresh(chatList);
+        } else if (event.event === "delta") {
           const current = get(continueStreamedText);
           get.set(continueStreamedText, `${current}${event.data.text}`);
         } else if (event.event === "done") {
@@ -138,6 +130,10 @@ export const sendContinueMessage = chatRuntime.fn<ContinueInput>()((input, get) 
         }
       }),
     );
+
+    const chat = yield* service.getChat(input.chatId);
+    get.set(chatMessages, toChatMessages(chat));
+    get.refresh(chatList);
 
     return true;
   }),
@@ -166,6 +162,25 @@ export const continueState = Atom.make((get) => {
     isStreaming: streamed.length > 0 || sending,
   };
 });
+
+const toChatMessages = (chat: {
+  readonly history?: {
+    readonly content?: ReadonlyArray<{ readonly role: string; readonly content: unknown }>;
+  };
+}): ReadonlyArray<ChatMessage> => {
+  const messages: Array<ChatMessage> = [];
+
+  if (chat.history?.content !== undefined) {
+    for (const item of chat.history.content) {
+      if (item.role === "user" || item.role === "assistant") {
+        const content = extractTextContent(item.content);
+        messages.push({ role: item.role, content });
+      }
+    }
+  }
+
+  return messages;
+};
 
 const extractTextContent = (content: unknown): string => {
   if (typeof content === "string") {
