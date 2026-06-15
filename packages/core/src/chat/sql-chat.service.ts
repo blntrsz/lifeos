@@ -83,11 +83,19 @@ export const SqlChatService = Layer.effect(
         .pipe(Effect.catchTag("SqlError", (error) => Effect.die(error)));
     });
 
+    const remove: IChatService["remove"] = Effect.fn("SqlChatService.remove")(function* (id) {
+      yield* repository
+        .findById(id)
+        .pipe(Effect.catchTag("SqlError", (error) => Effect.die(error)));
+      yield* repository.delete(id).pipe(Effect.catchTag("SqlError", (error) => Effect.die(error)));
+    });
+
     return {
       startChat,
       continueChat,
       list,
       get,
+      remove,
     };
   }),
 );

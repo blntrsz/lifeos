@@ -61,5 +61,14 @@ export const ChatHandlers = HttpApiBuilder.group(ChatApi, "Chats", (handlers) =>
 
         return chat;
       }),
+    )
+    .handle("remove", ({ params }) =>
+      Effect.gen(function* () {
+        const chats = yield* ChatService;
+        return yield* chats.remove(params.id).pipe(
+          Effect.catchTag("NoSuchElementError", () => Effect.fail(new HttpApiError.NotFound({}))),
+          Effect.orDie,
+        );
+      }),
     ),
 );

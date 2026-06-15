@@ -34,6 +34,10 @@ export const ChatApi = HttpApi.make("ChatApi")
         success: ChatModel.ChatModel.json,
         error: [HttpApiError.NotFound, HttpApiError.BadRequest],
       }),
+      HttpApiEndpoint.delete("remove", "/chats/:id", {
+        params: ChatIdParams,
+        error: [HttpApiError.NotFound],
+      }),
     ),
   )
   .prefix("/api");

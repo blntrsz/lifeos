@@ -262,3 +262,88 @@ describe("chat list endpoints", () => {
     expect(secondIndex).toBeLessThan(firstIndex);
   });
 });
+
+describe("chat delete endpoints", () => {
+  const databaseFilename = join(tmpdir(), `lifeos-api-${crypto.randomUUID()}.db`);
+  const { handler, dispose } = makeWebHandler(databaseFilename);
+
+  afterAll(async () => {
+    await dispose();
+    await Promise.all([
+      Bun.file(databaseFilename)
+        .delete()
+        .catch(() => undefined),
+      Bun.file(`${databaseFilename}-shm`)
+        .delete()
+        .catch(() => undefined),
+      Bun.file(`${databaseFilename}-wal`)
+        .delete()
+        .catch(() => undefined),
+    ]);
+  });
+
+  test("deleting a chat removes its metadata and persisted history", async () => {
+    const startResponse = await handler(
+      new Request("http://localhost/api/chats/start-chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ message: { text: "Delete me" } }),
+      }),
+    );
+
+    const startEvents = parseSseEvents(await startResponse.text());
+    const chat = startEvents[0]?.data as { readonly id: string };
+
+    const deleteResponse = await handler(
+      new Request(`http://localhost/api/chats/${chat.id}`, { method: "DELETE" }),
+    );
+
+    expect(deleteResponse.status).toBe(204);
+
+    const getResponse = await handler(new Request(`http://localhost/api/chats/${chat.id}`));
+
+    expect(getResponse.status).toBe(404);
+  });
+
+  test("deleting a non-existent chat returns not found", async () => {
+    const response = await handler(
+      new Request("http://localhost/api/chats/cht-no-such-chat", { method: "DELETE" }),
+    );
+
+    expect(response.status).toBe(404);
+  });
+
+  test("deleted chat is excluded from listing", async () => {
+    const keepResponse = await handler(
+      new Request("http://localhost/api/chats/start-chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ message: { text: "Keep me" } }),
+      }),
+    );
+
+    const keepEvents = parseSseEvents(await keepResponse.text());
+    const keepChat = keepEvents[0]?.data as { readonly id: string };
+
+    const deleteResponse = await handler(
+      new Request("http://localhost/api/chats/start-chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ message: { text: "Delete me too" } }),
+      }),
+    );
+
+    const deleteEvents = parseSseEvents(await deleteResponse.text());
+    const deleteChat = deleteEvents[0]?.data as { readonly id: string };
+
+    await handler(new Request(`http://localhost/api/chats/${deleteChat.id}`, { method: "DELETE" }));
+
+    const listResponse = await handler(new Request("http://localhost/api/chats"));
+
+    expect(listResponse.status).toBe(200);
+    const body = (await listResponse.json()) as ReadonlyArray<Record<string, unknown>>;
+
+    expect(body).toHaveLength(1);
+    expect(body[0]!.id).toBe(keepChat.id);
+  });
+});

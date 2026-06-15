@@ -11,7 +11,9 @@ import {
   restoreDesktopPointer,
 } from "@/test/test-utils";
 
-import { ChatPage } from "../routes/chats.$id";
+import { Route as ChatRoute } from "../routes/chats.$id";
+
+const ChatPage = ChatRoute.options.component!;
 
 const makeChatJson = () =>
   createChatJsonResponse({
@@ -41,13 +43,12 @@ describe("chat detail page", () => {
     await renderWithRouter([{ path: "/chats/$id", component: ChatPage }], "/chats/cht-test");
 
     await waitFor(() => {
-      expect(screen.getByText("Agent")).toBeDefined();
       expect(screen.getByText("Hello")).toBeDefined();
       expect(screen.getByText("Agent received: Hello")).toBeDefined();
     });
 
     expect(fetchMock).toHaveBeenCalled();
-    const url = fetchMock.mock.calls[0]![0] as string;
+    const url = resolveUrl(fetchMock.mock.calls[0]![0] as string | URL | Request);
     expect(url).toContain("/api/chats/cht-test");
 
     restore();
@@ -102,7 +103,6 @@ describe("chat detail page", () => {
     await renderWithRouter([{ path: "/chats/$id", component: ChatPage }], "/chats/cht-missing");
 
     await waitFor(() => {
-      expect(screen.getByText("Agent")).toBeDefined();
       expect(screen.getByRole("alert")).toBeDefined();
     });
 

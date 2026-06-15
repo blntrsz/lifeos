@@ -23,7 +23,7 @@ function ChatPage() {
 
   useEffect(() => {
     if (id !== undefined && id !== "undefined") {
-      void load(id);
+      void load(id).catch(() => undefined);
     }
   }, [id, load]);
 
@@ -48,7 +48,7 @@ function ChatPage() {
     if (!continueState.canSend || id === undefined) {
       return;
     }
-    void sendContinue({ chatId: id, text: continueState.text });
+    void sendContinue({ chatId: id, text: continueState.text }).catch(() => undefined);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -104,6 +104,15 @@ function ChatPage() {
               <div className="flex justify-start">
                 <div className="max-w-[80%] rounded-2xl bg-muted px-4 py-3 text-foreground">
                   {continueState.streamedText}
+                </div>
+              </div>
+            )}
+            {continueState.sendError !== null && (
+              <div className="flex justify-start">
+                <div className="max-w-[80%] rounded-2xl bg-muted px-4 py-3 text-foreground">
+                  <span className="text-destructive" role="alert">
+                    {continueState.sendError}
+                  </span>
                 </div>
               </div>
             )}

@@ -1,6 +1,7 @@
-import type { ChatSseEvent } from "@template/core/domain/chat-sse.model";
+import { ChatSseEvent as ChatSseEventSchema } from "@template/core/domain/chat-sse.model";
 import * as ChatModel from "@template/core/domain/chat.model";
 import { Effect, Layer, Schema, Stream } from "effect";
+import * as Sse from "effect/unstable/encoding/Sse";
 import {
   FetchHttpClient,
   HttpClient,
@@ -8,34 +9,16 @@ import {
   HttpClientResponse,
 } from "effect/unstable/http";
 
-import { ChatNetworkError } from "@/chat/chat.errors";
+import { ChatNetworkError, ChatSseError } from "@/chat/chat.errors";
 import type { IChatService } from "@/chat/service/chat.service";
 import { ChatService } from "@/chat/service/chat.service";
 
-const parseSseFromText = (text: string): ReadonlyArray<ChatSseEvent> => {
-  const events: Array<ChatSseEvent> = [];
-
-  const blocks = text.trim().split("\n\n");
-  for (const block of blocks) {
-    const eventMatch = block.match(/^event: (.+)$/m);
-    const dataMatch = block.match(/^data: (.+)$/m);
-    const event = eventMatch?.[1] ?? "";
-    const data = dataMatch?.[1] ?? "";
-
-    try {
-      const parsed = Schema.decodeUnknownSync(ChatSseEvent)({
-        id: undefined,
-        event,
-        data,
-      });
-      events.push(parsed);
-    } catch {
-      // Skip unparseable events
-    }
-  }
-
-  return events;
-};
+const decodeChatSse = (response: HttpClientResponse.HttpClientResponse) =>
+  response.stream.pipe(
+    Stream.decodeText,
+    Stream.pipeThroughChannel(Sse.decodeSchema(ChatSseEventSchema)),
+    Stream.mapError((error) => new ChatSseError({ cause: error })),
+  );
 
 export const HttpChatService = Layer.effect(
   ChatService,
@@ -49,8 +32,7 @@ export const HttpChatService = Layer.effect(
         );
         const response = yield* client.execute(request);
         yield* HttpClientResponse.filterStatusOk(response);
-        const text = yield* response.text;
-        return Stream.fromIterable(parseSseFromText(text));
+        return decodeChatSse(response);
       }).pipe(Effect.mapError((error) => new ChatNetworkError({ cause: error })));
 
     const getChat: IChatService["getChat"] = (id) =>
@@ -68,8 +50,7 @@ export const HttpChatService = Layer.effect(
         );
         const response = yield* client.execute(request);
         yield* HttpClientResponse.filterStatusOk(response);
-        const text = yield* response.text;
-        return Stream.fromIterable(parseSseFromText(text));
+        return decodeChatSse(response);
       }).pipe(Effect.mapError((error) => new ChatNetworkError({ cause: error })));
 
     const list: IChatService["list"] = () =>

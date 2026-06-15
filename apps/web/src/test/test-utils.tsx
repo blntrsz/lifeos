@@ -63,34 +63,45 @@ export function createSseResponse(
   return new Response(stream, { headers: { "content-type": "text/event-stream" } });
 }
 
-export function mockFetch(response: Response) {
-  const originalFetch = globalThis.fetch;
-  const fetchMock = vi.fn(() => Promise.resolve(response));
-  globalThis.fetch = fetchMock;
+let originalFetch: typeof globalThis.fetch | null = null;
+let activeFetchHandler: ((url: string | URL | Request, init?: RequestInit) => Response) | null =
+  null;
+
+const fetchMock = vi.fn((url: string | URL | Request, init?: RequestInit) => {
+  if (activeFetchHandler === null) {
+    return Promise.reject("No mock fetch handler configured");
+  }
+  return Promise.resolve(activeFetchHandler(url, init));
+});
+
+function installMockFetch(handler: (url: string | URL | Request, init?: RequestInit) => Response) {
+  if (originalFetch === null) {
+    originalFetch = globalThis.fetch;
+  }
+
+  activeFetchHandler = handler;
+  fetchMock.mockClear();
+  globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
   return {
     restore: () => {
-      globalThis.fetch = originalFetch;
+      activeFetchHandler = null;
+      if (originalFetch !== null) {
+        globalThis.fetch = originalFetch;
+      }
     },
     fetchMock,
   };
 }
 
+export function mockFetch(response: Response) {
+  return installMockFetch(() => response.clone());
+}
+
 export function mockFetchWithHandler(
   handler: (url: string | URL | Request, init?: RequestInit) => Response,
 ) {
-  const originalFetch = globalThis.fetch;
-  const fetchMock = vi.fn((url: string | URL | Request, init?: RequestInit) =>
-    Promise.resolve(handler(url, init)),
-  );
-  globalThis.fetch = fetchMock;
-
-  return {
-    restore: () => {
-      globalThis.fetch = originalFetch;
-    },
-    fetchMock,
-  };
+  return installMockFetch(handler);
 }
 
 export function resolveUrl(input: string | URL | Request): string {
