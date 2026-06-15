@@ -155,6 +155,95 @@ describe("chat detail page", () => {
     restore();
   });
 
+  it("renders supported Effect AI Message parts in chat bubbles", async () => {
+    const chatJson = createChatJsonResponse({
+      id: "cht-parts",
+      title: "Parts",
+      createdAt: "2026-06-13T00:00:00.000Z",
+      updatedAt: "2026-06-14T00:00:00.000Z",
+      history: {
+        content: [
+          { role: "system", content: "System notice", options: {} },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Please inspect this", options: {} },
+              {
+                type: "file",
+                mediaType: "application/pdf",
+                fileName: "plan.pdf",
+                data: "data:application/pdf;base64,AA==",
+                options: {},
+              },
+            ],
+            options: {},
+          },
+          {
+            role: "assistant",
+            content: [
+              { type: "reasoning", text: "Checking the file summary", options: {} },
+              {
+                type: "tool-call",
+                id: "call-1",
+                name: "search_notes",
+                params: { query: "plan" },
+                providerExecuted: false,
+                options: {},
+              },
+              {
+                type: "tool-result",
+                id: "call-1",
+                name: "search_notes",
+                isFailure: false,
+                result: { matches: 2 },
+                options: {},
+              },
+              {
+                type: "tool-approval-request",
+                approvalId: "approval-1",
+                toolCallId: "call-2",
+                options: {},
+              },
+              { type: "text", text: "I found two related notes.", options: {} },
+            ],
+            options: {},
+          },
+          {
+            role: "tool",
+            content: [
+              {
+                type: "tool-approval-response",
+                approvalId: "approval-1",
+                approved: false,
+                reason: "Not now",
+                options: {},
+              },
+            ],
+            options: {},
+          },
+        ],
+      },
+    });
+
+    const { restore } = mockFetchWithHandler(() => chatJson);
+
+    await renderWithRouter([{ path: "/chats/$id", component: ChatPage }], "/chats/cht-parts");
+
+    await waitFor(() => {
+      expect(screen.getByText("System notice")).toBeDefined();
+      expect(screen.getByText("Please inspect this")).toBeDefined();
+      expect(screen.getByText("File: plan.pdf (application/pdf)")).toBeDefined();
+      expect(screen.getByText("Reasoning: Checking the file summary")).toBeDefined();
+      expect(screen.getByText("Tool call: search_notes")).toBeDefined();
+      expect(screen.getByText("Tool result: search_notes")).toBeDefined();
+      expect(screen.getByText("Approval requested: call-2")).toBeDefined();
+      expect(screen.getByText("I found two related notes.")).toBeDefined();
+      expect(screen.getByText("Approval denied: Not now")).toBeDefined();
+    });
+
+    restore();
+  });
+
   it("does not send an empty message from the continue composer", async () => {
     mockDesktopPointer();
     const { fetchMock, restore } = mockFetchWithHandler((url) => {
