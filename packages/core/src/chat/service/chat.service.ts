@@ -1,6 +1,7 @@
 import { Cause, Context, type Effect } from "effect";
 import type { SchemaError } from "effect/Schema";
 
+import type { AgentError, AgentService } from "@/agent/service/agent.service";
 import type * as ChatModel from "@/domain/chat.model";
 import type { IdService } from "@/domain/id/service/id.service";
 
@@ -14,11 +15,11 @@ export type ContinueChatResult = StartChatResult;
 export interface IChatService {
   startChat(
     input: ChatModel.StartChatInput,
-  ): Effect.Effect<StartChatResult, SchemaError, IdService>;
+  ): Effect.Effect<StartChatResult, AgentError | SchemaError, AgentService | IdService>;
   continueChat(
     id: typeof ChatModel.ChatId.Type,
     input: ChatModel.ContinueChatInput,
-  ): Effect.Effect<ContinueChatResult, Cause.NoSuchElementError | SchemaError>;
+  ): Effect.Effect<ContinueChatResult, AgentError | Cause.NoSuchElementError | SchemaError>;
   list(): Effect.Effect<ReadonlyArray<ChatModel.ChatMetadata>, SchemaError>;
   get(
     id: typeof ChatModel.ChatId.Type,

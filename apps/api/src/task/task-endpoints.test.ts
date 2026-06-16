@@ -2,7 +2,8 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { Effect } from "effect";
+import { AgentService } from "@template/core/agent/service/agent.service";
+import { Effect, Layer } from "effect";
 import { HttpClient, HttpClientResponse } from "effect/unstable/http";
 import type * as HttpClientRequest from "effect/unstable/http/HttpClientRequest";
 import { HttpApiClient } from "effect/unstable/httpapi";
@@ -11,7 +12,11 @@ import { makeWebHandler } from "../layers.ts";
 import { TaskApi } from "./task-api.ts";
 
 const databaseFilename = join(tmpdir(), `lifeos-api-${crypto.randomUUID()}.db`);
-const { handler, dispose } = makeWebHandler(databaseFilename);
+const TestAgentLive = Layer.succeed(
+  AgentService,
+  AgentService.of({ complete: () => Effect.succeed("") }),
+);
+const { handler, dispose } = makeWebHandler(databaseFilename, TestAgentLive);
 
 const makeBody = (request: HttpClientRequest.HttpClientRequest): RequestInit["body"] => {
   switch (request.body._tag) {

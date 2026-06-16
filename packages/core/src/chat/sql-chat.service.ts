@@ -2,6 +2,7 @@ import { Clock, Effect, Layer, Schema } from "effect";
 import { SqlClient, SqlModel } from "effect/unstable/sql";
 import * as SqlSchema from "effect/unstable/sql/SqlSchema";
 
+import { AgentService } from "@/agent/service/agent.service";
 import * as ChatModel from "@/domain/chat.model";
 
 import { ChatService, type IChatService } from "./service/chat.service";
@@ -10,6 +11,7 @@ export const SqlChatService = Layer.effect(
   ChatService,
   Effect.gen(function* () {
     const sql = yield* SqlClient.SqlClient;
+    const agent = yield* AgentService;
     const repository = yield* SqlModel.makeRepository(ChatModel.ChatModel, {
       idColumn: "id",
       tableName: "chat",
@@ -24,7 +26,8 @@ export const SqlChatService = Layer.effect(
 
     const startChat: IChatService["startChat"] = Effect.fn("SqlChatService.startChat")(
       function* (input) {
-        const agentText = ChatModel.createPlaceholderAgentText(input.message.text);
+        const prompt = yield* ChatModel.createUserPrompt(input.message.text);
+        const agentText = yield* agent.complete(prompt);
         const chat = yield* ChatModel.make(input, agentText);
 
         const persistedChat = yield* repository
@@ -44,12 +47,9 @@ export const SqlChatService = Layer.effect(
           .findById(id)
           .pipe(Effect.catchTag("SqlError", (error) => Effect.die(error)));
 
-        const agentText = ChatModel.createPlaceholderAgentText(input.message.text);
-        const history = ChatModel.appendCompletedHistory(
-          existing.history,
-          input.message.text,
-          agentText,
-        );
+        const prompt = ChatModel.appendUserMessage(existing.history, input.message.text);
+        const agentText = yield* agent.complete(prompt);
+        const history = ChatModel.appendAgentMessage(prompt, agentText);
         const updatedAt = yield* Clock.currentTimeMillis.pipe(
           Effect.map((millis) => new Date(millis)),
         );

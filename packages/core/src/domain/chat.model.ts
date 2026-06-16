@@ -67,7 +67,13 @@ export const deriveTitle = (messageText: string) => {
   return title.length === 0 ? "Untitled Chat" : title;
 };
 
-export const createPlaceholderAgentText = (messageText: string) => `Agent received: ${messageText}`;
+export const createUserPrompt = Effect.fn("ChatModel.createUserPrompt")(function* (
+  userText: string,
+) {
+  const chat = yield* Chat.fromPrompt([{ role: "user", content: userText }]);
+
+  return yield* Ref.get(chat.history);
+});
 
 export const createCompletedHistory = Effect.fn("ChatModel.createCompletedHistory")(function* (
   userText: string,
@@ -90,6 +96,12 @@ export const appendCompletedHistory = (
     { role: "user", content: userText },
     { role: "assistant", content: agentText },
   ]);
+
+export const appendUserMessage = (existingHistory: Prompt.Prompt, userText: string) =>
+  Prompt.concat(existingHistory, [{ role: "user", content: userText }]);
+
+export const appendAgentMessage = (existingHistory: Prompt.Prompt, agentText: string) =>
+  Prompt.concat(existingHistory, [{ role: "assistant", content: agentText }]);
 
 export const make = Effect.fn("ChatModel.make")(function* (
   input: StartChatInput,

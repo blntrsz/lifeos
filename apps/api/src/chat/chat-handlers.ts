@@ -46,6 +46,7 @@ export const ChatHandlers = HttpApiBuilder.group(ChatApi, "Chats", (handlers) =>
         const result = yield* chats.continueChat(params.id, payload).pipe(
           Effect.catchTag("NoSuchElementError", () => Effect.fail(new HttpApiError.NotFound({}))),
           Effect.catchTag("SchemaError", () => Effect.fail(new HttpApiError.BadRequest())),
+          Effect.catchTag("AgentError", (error) => Effect.die(error)),
         );
 
         return chatSseResponse(result);

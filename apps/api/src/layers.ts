@@ -1,4 +1,6 @@
 import { NodeFileSystem, NodePath } from "@effect/platform-node-shared";
+import { DeepSeekAgentService } from "@template/core/agent/deepseek-agent.service";
+import type { AgentService } from "@template/core/agent/service/agent.service";
 import { SqlChatService } from "@template/core/chat/sql-chat.service";
 import { LifeOsDatabaseLive } from "@template/core/common/database";
 import { UlidIdService } from "@template/core/domain/id/ulid-id.service";
@@ -15,10 +17,20 @@ import { TaskHandlers } from "./task/task-handlers.ts";
 const lifeOsDbPath =
   process.env.LIFEOS_DATABASE_FILENAME ?? `${import.meta.dirname}/../data/lifeos.db`;
 
-const makeAppLive = (databaseFilename = lifeOsDbPath) => {
+const DeepSeekAgentLive = DeepSeekAgentService({
+  apiKey: process.env.DEEPSEEK_API_KEY ?? "",
+  baseUrl: process.env.DEEPSEEK_BASE_URL,
+  model: process.env.DEEPSEEK_MODEL,
+});
+
+const makeAppLive = (
+  databaseFilename = lifeOsDbPath,
+  AgentLive: Layer.Layer<AgentService> = DeepSeekAgentLive,
+) => {
   const DatabaseLive = LifeOsDatabaseLive(databaseFilename);
   const ServicesLive = Layer.mergeAll(SqlTaskService, SqlChatService).pipe(
     Layer.provide(DatabaseLive),
+    Layer.provide(AgentLive),
     Layer.provide(UlidIdService),
   );
 
@@ -38,8 +50,14 @@ const makeAppLive = (databaseFilename = lifeOsDbPath) => {
   );
 };
 
-export const makeWebHandler = (databaseFilename = lifeOsDbPath) =>
-  HttpRouter.toWebHandler(makeAppLive(databaseFilename));
+export const makeWebHandler = (databaseFilename = lifeOsDbPath, AgentLive = DeepSeekAgentLive) => {
+  const { handler, dispose } = HttpRouter.toWebHandler(makeAppLive(databaseFilename, AgentLive));
+
+  return {
+    handler: (request: Request) => handler(request, Context.empty() as Context.Context<unknown>),
+    dispose,
+  };
+};
 
 export const AppLive = makeAppLive();
 

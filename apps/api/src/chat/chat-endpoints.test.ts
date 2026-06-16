@@ -2,9 +2,36 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { AgentService } from "@template/core/agent/service/agent.service";
 import { ChatId } from "@template/core/domain/chat.model";
+import { Effect, Layer } from "effect";
+import type { Prompt } from "effect/unstable/ai";
 
 import { makeWebHandler } from "../layers.ts";
+
+const textFromContent = (content: Prompt.Message["content"]) => {
+  if (typeof content === "string") {
+    return content;
+  }
+
+  return content
+    .filter((part): part is Prompt.TextPart => part.type === "text")
+    .map((part) => part.text)
+    .join("\n");
+};
+
+const TestAgentLive = Layer.succeed(
+  AgentService,
+  AgentService.of({
+    complete: (prompt) => {
+      const userMessage = prompt.content.findLast((message) => message.role === "user");
+
+      return Effect.succeed(
+        `Agent received: ${userMessage === undefined ? "" : textFromContent(userMessage.content)}`,
+      );
+    },
+  }),
+);
 
 const parseSseEvents = (streamText: string) =>
   streamText
@@ -19,7 +46,7 @@ const parseSseEvents = (streamText: string) =>
 
 describe("chat endpoints", () => {
   const databaseFilename = join(tmpdir(), `lifeos-api-${crypto.randomUUID()}.db`);
-  const { handler, dispose } = makeWebHandler(databaseFilename);
+  const { handler, dispose } = makeWebHandler(databaseFilename, TestAgentLive);
 
   afterAll(async () => {
     await dispose();
@@ -157,7 +184,7 @@ describe("chat endpoints", () => {
 
 describe("chat list endpoints", () => {
   const databaseFilename = join(tmpdir(), `lifeos-api-${crypto.randomUUID()}.db`);
-  const { handler, dispose } = makeWebHandler(databaseFilename);
+  const { handler, dispose } = makeWebHandler(databaseFilename, TestAgentLive);
 
   afterAll(async () => {
     await dispose();
@@ -265,7 +292,7 @@ describe("chat list endpoints", () => {
 
 describe("chat delete endpoints", () => {
   const databaseFilename = join(tmpdir(), `lifeos-api-${crypto.randomUUID()}.db`);
-  const { handler, dispose } = makeWebHandler(databaseFilename);
+  const { handler, dispose } = makeWebHandler(databaseFilename, TestAgentLive);
 
   afterAll(async () => {
     await dispose();
